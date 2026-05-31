@@ -150,7 +150,13 @@ function TaskCard({ t, h }: { t: Task; h: Handlers }) {
             <Circle className="h-4 w-4 text-muted transition-colors hover:text-primary" />
           )}
         </button>
-        <p className={cn("flex-1 text-sm font-medium leading-snug", done ? "text-muted line-through" : "text-foreground")}>
+        <p
+          title={t.title}
+          className={cn(
+            "line-clamp-2 min-h-[2.4rem] flex-1 text-sm font-medium leading-snug",
+            done ? "text-muted line-through" : "text-foreground"
+          )}
+        >
           {t.title}
         </p>
         <button
