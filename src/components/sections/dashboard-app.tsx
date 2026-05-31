@@ -72,12 +72,12 @@ type Task = {
 };
 
 const INITIAL_TASKS: Task[] = [
-  { id: "FLO-128", title: "Redesign onboarding flow", status: "inprogress", label: "Design", who: ["SC", "ER"], due: "Jun 4", priority: "High", progress: 60, comments: 4, subtasks: "2/5", span: [2, 4] },
-  { id: "FLO-131", title: "Build pricing API endpoint", status: "inprogress", label: "Eng", who: ["ML"], due: "Jun 6", priority: "High", progress: 35, comments: 3, span: [3, 5] },
-  { id: "FLO-126", title: "Homepage hero copy v2", status: "review", label: "Content", who: ["DO"], due: "Jun 2", priority: "Medium", progress: 90, comments: 1, span: [1, 2] },
+  { id: "FLO-128", title: "Onboarding flow redesign", status: "inprogress", label: "Design", who: ["SC", "ER"], due: "Jun 4", priority: "High", progress: 60, comments: 4, subtasks: "2/5", span: [2, 4] },
+  { id: "FLO-131", title: "Pricing API endpoint", status: "inprogress", label: "Eng", who: ["ML"], due: "Jun 6", priority: "High", progress: 35, comments: 3, span: [3, 5] },
+  { id: "FLO-126", title: "Homepage hero copy", status: "review", label: "Content", who: ["DO"], due: "Jun 2", priority: "Medium", progress: 90, comments: 1, span: [1, 2] },
   { id: "FLO-119", title: "Mobile nav prototype", status: "review", label: "Design", who: ["ER"], due: "Jun 3", priority: "Medium", progress: 100, subtasks: "4/4", span: [2, 3] },
-  { id: "FLO-140", title: "Audit competitor pricing pages", status: "backlog", label: "Research", who: ["PN"], due: "Jun 9", priority: "Low", progress: 0, subtasks: "0/3", span: [4, 6] },
-  { id: "FLO-142", title: "Set up product analytics events", status: "backlog", label: "Eng", who: ["ML"], due: "Jun 11", priority: "Medium", progress: 0, comments: 2, span: [5, 7] },
+  { id: "FLO-140", title: "Competitor pricing audit", status: "backlog", label: "Research", who: ["PN"], due: "Jun 9", priority: "Low", progress: 0, subtasks: "0/3", span: [4, 6] },
+  { id: "FLO-142", title: "Analytics events setup", status: "backlog", label: "Eng", who: ["ML"], due: "Jun 11", priority: "Medium", progress: 0, comments: 2, span: [5, 7] },
   { id: "FLO-101", title: "Brand color palette", status: "done", label: "Design", who: ["SC"], due: "May 28", priority: "Medium", progress: 100, span: [1, 2] },
   { id: "FLO-094", title: "Q2 referral program", status: "done", label: "Growth", who: ["PN"], due: "May 26", priority: "Low", progress: 100, span: [1, 3] },
 ];
@@ -98,9 +98,9 @@ const PRIORITY: Record<Priority, string> = {
 
 const ACTIVITY = [
   { who: "ER" as Who, text: "moved Mobile nav prototype to In review", time: "12m" },
-  { who: "ML" as Who, text: "commented on Build pricing API endpoint", time: "48m" },
+  { who: "ML" as Who, text: "commented on Pricing API endpoint", time: "48m" },
   { who: "SC" as Who, text: "completed Brand color palette", time: "2h" },
-  { who: "DO" as Who, text: "created Homepage hero copy v2", time: "5h" },
+  { who: "DO" as Who, text: "created Homepage hero copy", time: "5h" },
 ];
 
 /* --------------------------- primitives --------------------------- */
