@@ -12,15 +12,11 @@ import {
   Search,
   Plus,
   Bell,
-  MessageSquare,
-  ListChecks,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
   Sparkles,
   ArrowUpRight,
-  TrendingUp,
-  Clock,
   CheckCircle2,
   Circle,
   Filter,
@@ -139,14 +135,14 @@ function TaskCard({ t, h }: { t: Task; h: Handlers }) {
       initial={{ opacity: 0, y: 8 }}
       animate={{ opacity: 1, y: 0 }}
       exit={{ opacity: 0, scale: 0.96 }}
-      className="group/card rounded-xl border border-border bg-surface p-3 shadow-sm transition-colors hover:border-primary/30"
+      className="group/card rounded-xl border border-border bg-surface p-3.5 shadow-sm transition-colors hover:border-primary/30"
     >
-      <div className="flex items-center gap-2">
+      <div className="flex items-start gap-2.5">
         <button
           type="button"
           onClick={() => h.onToggleDone(t.id)}
           aria-label={done ? "Mark as not done" : "Mark as done"}
-          className="shrink-0"
+          className="mt-0.5 shrink-0"
         >
           {done ? (
             <CheckCircle2 className="h-4 w-4 text-emerald-500" />
@@ -154,73 +150,53 @@ function TaskCard({ t, h }: { t: Task; h: Handlers }) {
             <Circle className="h-4 w-4 text-muted transition-colors hover:text-primary" />
           )}
         </button>
-        <span className={cn("inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold", LABELS[t.label])}>
-          {t.label}
-        </span>
-        <span className="ml-auto text-[10px] font-medium text-muted">{t.id}</span>
+        <p className={cn("flex-1 text-sm font-medium leading-snug", done ? "text-muted line-through" : "text-foreground")}>
+          {t.title}
+        </p>
         <button
           type="button"
           onClick={() => h.onDelete(t.id)}
           aria-label="Delete task"
-          className="text-muted opacity-0 transition-opacity hover:text-rose-500 group-hover/card:opacity-100"
+          className="-mr-1 mt-0.5 text-muted opacity-0 transition-opacity hover:text-rose-500 group-hover/card:opacity-100"
         >
           <Trash2 className="h-3.5 w-3.5" />
         </button>
       </div>
 
-      <p className={cn("mt-2 text-sm font-medium leading-snug", done ? "text-muted line-through" : "text-foreground")}>
-        {t.title}
-      </p>
-
-      {t.progress > 0 && t.progress < 100 && (
-        <div className="mt-2.5 h-1 w-full overflow-hidden rounded-full bg-surface-2">
-          <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" style={{ width: `${t.progress}%` }} />
+      <div className="mt-3 flex items-center justify-between gap-2">
+        <div className="flex items-center gap-2">
+          <span className={cn("inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold", LABELS[t.label])}>
+            {t.label}
+          </span>
+          <div className="flex -space-x-1.5">
+            {t.who.map((w) => (
+              <Avatar key={w} who={w} className="h-5 w-5" />
+            ))}
+          </div>
         </div>
-      )}
 
-      <div className="mt-3 flex items-center justify-between">
-        <div className="flex -space-x-1.5">
-          {t.who.map((w) => (
-            <Avatar key={w} who={w} className="h-5 w-5" />
-          ))}
+        {/* Due (default) → move controls on hover */}
+        <span className="text-[11px] text-muted group-hover/card:hidden">{t.due}</span>
+        <div className="hidden items-center gap-1 group-hover/card:flex">
+          <button
+            type="button"
+            disabled={idx === 0}
+            onClick={() => h.onMove(t.id, -1)}
+            aria-label="Move left"
+            className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted transition-colors hover:text-foreground disabled:opacity-30"
+          >
+            <ChevronLeft className="h-3.5 w-3.5" />
+          </button>
+          <button
+            type="button"
+            disabled={idx === STATUS_ORDER.length - 1}
+            onClick={() => h.onMove(t.id, 1)}
+            aria-label="Move right"
+            className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted transition-colors hover:text-foreground disabled:opacity-30"
+          >
+            <ChevronRight className="h-3.5 w-3.5" />
+          </button>
         </div>
-        <div className="flex items-center gap-2 text-[10px] text-muted">
-          {t.subtasks && (
-            <span className="flex items-center gap-0.5">
-              <ListChecks className="h-3 w-3" />
-              {t.subtasks}
-            </span>
-          )}
-          {t.comments && (
-            <span className="flex items-center gap-0.5">
-              <MessageSquare className="h-3 w-3" />
-              {t.comments}
-            </span>
-          )}
-          <span className="rounded-md bg-surface-2 px-1.5 py-0.5 font-medium">{t.due}</span>
-        </div>
-      </div>
-
-      {/* Move controls */}
-      <div className="mt-2 flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover/card:opacity-100">
-        <button
-          type="button"
-          disabled={idx === 0}
-          onClick={() => h.onMove(t.id, -1)}
-          aria-label="Move left"
-          className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted transition-colors hover:text-foreground disabled:opacity-30"
-        >
-          <ChevronLeft className="h-3.5 w-3.5" />
-        </button>
-        <button
-          type="button"
-          disabled={idx === STATUS_ORDER.length - 1}
-          onClick={() => h.onMove(t.id, 1)}
-          aria-label="Move right"
-          className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted transition-colors hover:text-foreground disabled:opacity-30"
-        >
-          <ChevronRight className="h-3.5 w-3.5" />
-        </button>
       </div>
     </motion.div>
   );
@@ -626,10 +602,10 @@ export function DashboardApp() {
   };
 
   const KPIS = [
-    { k: "Completed", v: `${stats.pct}%`, sub: `${stats.done} of ${stats.total} done`, icon: CheckCircle2, accent: "text-emerald-500" },
-    { k: "In progress", v: `${stats.inProgress}`, sub: "active now", icon: TrendingUp, accent: "text-primary" },
-    { k: "Tasks left", v: `${stats.left}`, sub: "to complete", icon: Clock, accent: "text-amber-500" },
-    { k: "Velocity", v: "41 pts", sub: "target 38", icon: BarChart3, accent: "text-sky-500" },
+    { k: "Completed", v: `${stats.pct}%` },
+    { k: "In progress", v: `${stats.inProgress}` },
+    { k: "Tasks left", v: `${stats.left}` },
+    { k: "Velocity", v: "41 pts" },
   ];
 
   return (
@@ -757,15 +733,19 @@ export function DashboardApp() {
         <div className="flex flex-1 gap-6 p-4 sm:p-6">
           <div className="min-w-0 flex-1">
             {/* KPIs */}
-            <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
-              {KPIS.map((s) => (
-                <div key={s.k} className="rounded-card border border-border bg-surface p-4">
-                  <div className="flex items-center justify-between">
-                    <span className="text-xs text-muted">{s.k}</span>
-                    <s.icon className={cn("h-4 w-4", s.accent)} />
-                  </div>
-                  <div className="mt-1.5 font-display text-2xl font-bold text-foreground">{s.v}</div>
-                  <div className="mt-0.5 text-[11px] text-muted">{s.sub}</div>
+            <div className="grid grid-cols-2 overflow-hidden rounded-card border border-border bg-surface sm:grid-cols-4">
+              {KPIS.map((s, i) => (
+                <div
+                  key={s.k}
+                  className={cn(
+                    "px-5 py-4",
+                    i % 2 === 1 && "border-l border-border",
+                    i >= 2 && "border-t border-border sm:border-t-0",
+                    i !== 0 && "sm:border-l sm:border-border"
+                  )}
+                >
+                  <div className="text-xs text-muted">{s.k}</div>
+                  <div className="mt-1 font-display text-2xl font-bold text-foreground">{s.v}</div>
                 </div>
               ))}
             </div>
@@ -836,9 +816,9 @@ export function DashboardApp() {
 
           {/* Right rail */}
           <aside className="hidden w-72 shrink-0 xl:block">
-            <div className="rounded-card border border-border bg-surface p-4">
-              <h3 className="text-sm font-semibold text-foreground">Activity</h3>
-              <ul className="mt-4 flex flex-col gap-4">
+            <div className="rounded-card border border-border bg-surface p-5">
+              <h3 className="text-sm font-semibold text-foreground">Recent activity</h3>
+              <ul className="mt-5 flex flex-col gap-5">
                 {ACTIVITY.map((a, i) => (
                   <li key={i} className="flex gap-3">
                     <Avatar who={a.who} className="mt-0.5 h-6 w-6" />
@@ -851,22 +831,6 @@ export function DashboardApp() {
                   </li>
                 ))}
               </ul>
-            </div>
-
-            <div className="mt-4 rounded-card border border-border bg-surface p-4">
-              <h3 className="text-sm font-semibold text-foreground">Sprint progress</h3>
-              <div className="mt-3 flex items-end justify-between">
-                <span className="font-display text-3xl font-bold text-foreground">{stats.pct}%</span>
-                <span className="text-xs text-emerald-500">{stats.done}/{stats.total}</span>
-              </div>
-              <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-2">
-                <motion.div
-                  className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
-                  animate={{ width: `${stats.pct}%` }}
-                  transition={{ type: "spring", stiffness: 200, damping: 30 }}
-                />
-              </div>
-              <p className="mt-2 text-[11px] text-muted">{stats.left} tasks remaining · ends in 4 days</p>
             </div>
           </aside>
         </div>
