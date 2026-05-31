@@ -1,26 +1,223 @@
 @import "tailwindcss";
 
+@custom-variant dark (&:where(.dark, .dark *));
+
+/* =========================================================================
+   DESIGN SYSTEM — "Kinetic Editorial"
+   Duotone: violet (--primary) × acid lime (--accent).
+   Re-theme by editing --primary / --accent.
+   ========================================================================= */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
+  --primary-foreground: #ffffff;
+  --accent: #c8ff4d; /* acid lime — the signature pop */
+  --accent-ink: #1a2300; /* readable text on lime */
+
+  --background: #f6f5f1; /* warm paper */
+  --foreground: #0a0a0c;
+  --surface: #ffffff;
+  --surface-2: #eeede7;
+  --border: #e2e1d8;
+  --muted: #5f5f6b;
+
+  --radius: 1.25rem;
+}
+
+.dark {
+  --primary: #8b5cf6;
+  --primary-hover: #a78bfa;
+  --primary-foreground: #ffffff;
+  --accent: #c8ff4d;
+  --accent-ink: #18210a;
+
+  --background: #060507;
+  --foreground: #f4f4f7;
+  --surface: #0e0d12;
+  --surface-2: #15141b;
+  --border: #211f2b;
+  --muted: #908fa6;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-surface: var(--surface);
+  --color-surface-2: var(--surface-2);
+  --color-border: var(--border);
+  --color-muted: var(--muted);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-accent: var(--accent);
+  --color-accent-ink: var(--accent-ink);
+
+  --font-sans: var(--font-inter), ui-sans-serif, system-ui, sans-serif;
+  --font-display: var(--font-display), var(--font-inter), sans-serif;
+  --radius-card: var(--radius);
+
+  --animate-marquee: marquee 38s linear infinite;
+  --animate-marquee-reverse: marquee-reverse 38s linear infinite;
+  --animate-marquee-fast: marquee 22s linear infinite;
+  --animate-aurora: aurora 18s ease-in-out infinite;
+  --animate-float: float 7s ease-in-out infinite;
+  --animate-spin-slow: spin 16s linear infinite;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+@layer base {
+  * {
+    border-color: var(--border);
+  }
+
+  html {
+    scroll-behavior: smooth;
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--background);
+    color: var(--foreground);
+    font-family: var(--font-sans);
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+    overflow-x: hidden;
+  }
+
+  ::selection {
+    background-color: var(--accent);
+    color: var(--accent-ink);
+  }
+
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: color-mix(in srgb, var(--muted) 35%, transparent);
+    border-radius: 9999px;
+  }
+
+  /* Hide native cursor on fine pointers; custom cursor takes over. */
+  @media (pointer: fine) {
+    .cursor-custom,
+    .cursor-custom * {
+      cursor: none;
+    }
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+@layer utilities {
+  .font-display {
+    font-family: var(--font-display);
+    letter-spacing: -0.03em;
+  }
+
+  .text-gradient-brand {
+    background-image: linear-gradient(110deg, var(--primary), #e879f9 70%);
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+  }
+
+  /* Outline / stroked display type */
+  .text-outline {
+    color: transparent;
+    -webkit-text-stroke: 1.5px var(--foreground);
+  }
+  .text-outline-muted {
+    color: transparent;
+    -webkit-text-stroke: 1.5px color-mix(in srgb, var(--foreground) 22%, transparent);
+  }
+
+  .bg-grid {
+    background-image: radial-gradient(
+      color-mix(in srgb, var(--muted) 20%, transparent) 1px,
+      transparent 1px
+    );
+    background-size: 30px 30px;
+  }
+
+  .glass {
+    background-color: color-mix(in srgb, var(--surface) 55%, transparent);
+    backdrop-filter: blur(18px) saturate(170%);
+    -webkit-backdrop-filter: blur(18px) saturate(170%);
+  }
+
+  .grain {
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  .gradient-border {
+    position: relative;
+    background: linear-gradient(var(--surface), var(--surface)) padding-box,
+      conic-gradient(
+          from var(--angle, 0deg),
+          var(--primary),
+          var(--accent),
+          var(--primary)
+        )
+        border-box;
+    border: 1.5px solid transparent;
+  }
+
+  .mask-fade-x {
+    -webkit-mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 10%,
+      black 90%,
+      transparent
+    );
+    mask-image: linear-gradient(
+      to right,
+      transparent,
+      black 10%,
+      black 90%,
+      transparent
+    );
+  }
+
+  .perspective {
+    perspective: 1600px;
+  }
+}
+
+@property --angle {
+  syntax: "<angle>";
+  initial-value: 0deg;
+  inherits: false;
+}
+
+@keyframes marquee {
+  from { transform: translateX(0); }
+  to { transform: translateX(-50%); }
+}
+@keyframes marquee-reverse {
+  from { transform: translateX(-50%); }
+  to { transform: translateX(0); }
+}
+@keyframes aurora {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(4%, -6%) scale(1.1); }
+  66% { transform: translate(-5%, 4%) scale(0.95); }
+}
+@keyframes float {
+  0%, 100% { transform: translateY(0); }
+  50% { transform: translateY(-12px); }
+}
+@keyframes spin-border {
+  to { --angle: 360deg; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  html { scroll-behavior: auto; }
+  *, *::before, *::after {
+    animation-duration: 0.001ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.001ms !important;
+    scroll-behavior: auto !important;
+  }
 }
