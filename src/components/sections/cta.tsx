@@ -43,7 +43,7 @@ export function CTA() {
             </motion.p>
             <motion.div variants={fadeUp} className="mt-9 flex justify-center">
               <Magnetic>
-                <Button href="#pricing" size="lg">
+                <Button href="/signup" size="lg">
                   Start free trial
                   <ArrowUpRight className="h-4 w-4" />
                 </Button>

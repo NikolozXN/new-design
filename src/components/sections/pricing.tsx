@@ -160,7 +160,7 @@ function PlanCard({ plan, annual }: { plan: Plan; annual: boolean }) {
       </p>
 
       <Button
-        href={isCustom ? "#" : "#"}
+        href={isCustom ? "/contact" : "/signup"}
         variant={plan.highlighted ? "primary" : "secondary"}
         size="sm"
         className="mt-5 w-full"

@@ -35,19 +35,43 @@ function YouTubeIcon(props: SVGProps<SVGSVGElement>) {
 const LINK_COLUMNS = [
   {
     title: "Product",
-    links: ["Features", "Pricing", "Integrations", "Changelog", "Roadmap"],
+    links: [
+      { label: "Features", href: "/#features" },
+      { label: "Pricing", href: "/pricing" },
+      { label: "Dashboard", href: "/dashboard" },
+      { label: "Changelog", href: "/#" },
+      { label: "Roadmap", href: "/#" },
+    ],
   },
   {
     title: "Company",
-    links: ["About", "Careers", "Blog", "Press", "Contact"],
+    links: [
+      { label: "About", href: "/about" },
+      { label: "Careers", href: "/#" },
+      { label: "Blog", href: "/#" },
+      { label: "Press", href: "/#" },
+      { label: "Contact", href: "/contact" },
+    ],
   },
   {
     title: "Resources",
-    links: ["Documentation", "Help center", "Community", "API reference", "Status"],
+    links: [
+      { label: "Documentation", href: "/#" },
+      { label: "Help center", href: "/contact" },
+      { label: "Community", href: "/#" },
+      { label: "API reference", href: "/#" },
+      { label: "Status", href: "/#" },
+    ],
   },
   {
     title: "Legal",
-    links: ["Privacy", "Terms", "Security", "Cookies", "DPA"],
+    links: [
+      { label: "Privacy", href: "/privacy" },
+      { label: "Terms", href: "/terms" },
+      { label: "Security", href: "/#" },
+      { label: "Cookies", href: "/privacy" },
+      { label: "DPA", href: "/terms" },
+    ],
   },
 ];
 
@@ -80,12 +104,12 @@ export function Footer() {
               </h3>
               <ul className="mt-4 flex flex-col gap-3">
                 {col.links.map((link) => (
-                  <li key={link}>
+                  <li key={link.label}>
                     <a
-                      href="#"
+                      href={link.href}
                       className="text-sm text-muted transition-colors hover:text-foreground"
                     >
-                      {link}
+                      {link.label}
                     </a>
                   </li>
                 ))}

@@ -11,8 +11,11 @@ and **lucide-react**, with full **dark / light mode** support.
 
 ## ✨ Features
 
-- **9 polished sections** — Navbar, Hero, Features, How it works, Pricing,
-  Testimonials, FAQ, CTA, Footer.
+- **11 ready-made pages** — landing, dedicated pricing (with comparison table),
+  about, contact, privacy, terms, a live in-app dashboard, login, signup,
+  forgot-password, and a custom 404 (see [Pages](#-pages-included)).
+- **9 polished landing sections** — Navbar, Hero, Features, How it works,
+  Pricing, Testimonials, FAQ, CTA, Footer.
 - **Dark & light mode** via `next-themes` (class strategy) with a smooth toggle.
 - **Single-variable theming** — change one CSS variable to recolor everything.
 - **Framer Motion animations** — on-load and on-scroll, all of which respect
@@ -20,6 +23,28 @@ and **lucide-react**, with full **dark / light mode** support.
 - **Fully responsive**, mobile-first, with an animated mobile menu.
 - **Accessible** — semantic markup, focus states, ARIA labels.
 - **Type-safe** TypeScript throughout, zero lint errors.
+
+---
+
+## 📑 Pages included
+
+| Route               | Description                                                              |
+| ------------------- | ------------------------------------------------------------------------ |
+| `/`                 | Full landing page (hero, features, pricing, testimonials, FAQ, CTA…)     |
+| `/pricing`          | Dedicated pricing page with an animated billing toggle + comparison table |
+| `/about`            | Company story, stats, values grid, and team                              |
+| `/contact`          | Contact page with a working-feeling form + support channels              |
+| `/privacy`          | Privacy Policy (templated, with sticky table of contents)                |
+| `/terms`            | Terms of Service (templated)                                             |
+| `/dashboard`        | A live in-app demo — sidebar, KPIs, and Board / List / Timeline views    |
+| `/login`            | Sign-in screen with social buttons (split brand layout)                  |
+| `/signup`           | Free-trial sign-up screen                                                |
+| `/forgot-password`  | Password reset flow with success state                                   |
+| `404`               | Custom not-found page                                                    |
+
+Marketing pages share a single [`SiteShell`](src/components/ui/site-shell.tsx)
+(navbar + footer + chrome). Auth and dashboard pages use their own focused
+layouts.
 
 ---
 
@@ -104,7 +129,13 @@ you can edit in place. Content lives at the top of each section component in
 | Questions (`FAQS`)           | `src/components/sections/faq.tsx`                |
 | Final CTA copy               | `src/components/sections/cta.tsx`                |
 | Footer links & socials       | `src/components/sections/footer.tsx`             |
-| Page `<title>` / meta        | `src/app/layout.tsx`                             |
+| Pricing comparison table     | `src/components/sections/pricing-comparison.tsx` |
+| About story / values / team  | `src/components/sections/about.tsx`              |
+| Contact form & channels      | `src/components/sections/contact.tsx`            |
+| Legal copy (privacy/terms)   | `src/app/privacy/page.tsx`, `src/app/terms/page.tsx` |
+| Dashboard data & views       | `src/components/sections/dashboard-app.tsx`      |
+| Auth screens                 | `src/components/sections/auth-views.tsx`         |
+| Per-page `<title>` / meta    | `metadata` export in each `src/app/**/page.tsx`  |
 
 Most lists are plain arrays of objects (`FEATURES`, `PLANS`, `FAQS`, …) — add,
 remove, or reorder items freely.
@@ -173,12 +204,22 @@ src/
 ├─ app/
 │  ├─ globals.css        # design tokens + base styles (theme lives here)
 │  ├─ layout.tsx         # fonts, metadata, providers
-│  └─ page.tsx           # assembles all sections
+│  ├─ page.tsx           # landing page (assembles all sections)
+│  ├─ not-found.tsx      # custom 404
+│  ├─ pricing/           # /pricing
+│  ├─ about/             # /about
+│  ├─ contact/           # /contact
+│  ├─ privacy/           # /privacy
+│  ├─ terms/             # /terms
+│  ├─ dashboard/         # /dashboard (live in-app demo)
+│  ├─ login/             # /login
+│  ├─ signup/            # /signup
+│  └─ forgot-password/   # /forgot-password
 ├─ components/
 │  ├─ providers.tsx      # next-themes + Framer Motion reduced-motion config
 │  ├─ theme-toggle.tsx   # dark/light switch
-│  ├─ sections/          # navbar, hero, features, pricing, … (page sections)
-│  └─ ui/                # reusable bits: button, container, logo, heading…
+│  ├─ sections/          # page sections + page-specific blocks
+│  └─ ui/                # reusable bits: button, container, logo, site-shell…
 └─ lib/
    ├─ motion.ts          # shared Framer Motion variants
    └─ utils.ts           # cn() class-name helper

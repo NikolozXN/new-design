@@ -9,12 +9,16 @@ import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
-  { label: "Features", href: "#features" },
-  { label: "How it works", href: "#how-it-works" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "Reviews", href: "#testimonials" },
-  { label: "FAQ", href: "#faq" },
+  { label: "Features", href: "/#features" },
+  { label: "How it works", href: "/#how-it-works" },
+  { label: "Pricing", href: "/pricing" },
+  { label: "Reviews", href: "/#testimonials" },
+  { label: "FAQ", href: "/#faq" },
 ];
+
+/** Hash portion of a nav href, e.g. "/#features" -> "#features" (or null). */
+const hashOf = (href: string) =>
+  href.includes("#") ? `#${href.split("#")[1]}` : null;
 
 export function Navbar() {
   const [scrolled, setScrolled] = useState(false);
@@ -31,7 +35,12 @@ export function Navbar() {
 
   // Scrollspy: highlight the nav link for the section currently in view.
   useEffect(() => {
-    const ids = ["home", ...NAV_LINKS.map((l) => l.href.slice(1))];
+    const ids = [
+      "home",
+      ...NAV_LINKS.map((l) => hashOf(l.href))
+        .filter((h): h is string => h !== null)
+        .map((h) => h.slice(1)),
+    ];
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
@@ -78,7 +87,7 @@ export function Navbar() {
             className="hidden items-center md:flex"
           >
             {NAV_LINKS.map((link) => {
-              const isActive = active === link.href;
+              const isActive = hashOf(link.href) === active;
               return (
                 <li key={link.href} className="relative">
                   <a
@@ -115,10 +124,10 @@ export function Navbar() {
           {/* Right actions */}
           <div className="hidden items-center gap-2 md:flex">
             <ThemeToggle />
-            <Button href="#" variant="ghost" size="sm">
+            <Button href="/login" variant="ghost" size="sm">
               Sign in
             </Button>
-            <Button href="#pricing" size="sm">
+            <Button href="/signup" size="sm">
               Get started
               <ArrowUpRight className="h-4 w-4" />
             </Button>
@@ -183,10 +192,10 @@ export function Navbar() {
               transition={{ delay: 0.4 }}
               className="flex flex-col gap-3 border-t border-border px-8 py-8"
             >
-              <Button href="#" variant="secondary" size="lg" onClick={() => setOpen(false)}>
+              <Button href="/login" variant="secondary" size="lg" onClick={() => setOpen(false)}>
                 Sign in
               </Button>
-              <Button href="#pricing" size="lg" onClick={() => setOpen(false)}>
+              <Button href="/signup" size="lg" onClick={() => setOpen(false)}>
                 Get started
                 <ArrowUpRight className="h-4 w-4" />
               </Button>
