@@ -1,6 +1,8 @@
 "use client";
 
 import { useEffect, useState } from "react";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
 import { ArrowUpRight, Menu, X } from "lucide-react";
 import { Logo } from "@/components/ui/logo";
@@ -10,10 +12,10 @@ import { cn } from "@/lib/utils";
 
 const NAV_LINKS = [
   { label: "Features", href: "/#features" },
-  { label: "How it works", href: "/#how-it-works" },
   { label: "Pricing", href: "/pricing" },
-  { label: "Reviews", href: "/#testimonials" },
-  { label: "FAQ", href: "/#faq" },
+  { label: "Dashboard", href: "/dashboard" },
+  { label: "About", href: "/about" },
+  { label: "Contact", href: "/contact" },
 ];
 
 /** Hash portion of a nav href, e.g. "/#features" -> "#features" (or null). */
@@ -21,10 +23,11 @@ const hashOf = (href: string) =>
   href.includes("#") ? `#${href.split("#")[1]}` : null;
 
 export function Navbar() {
+  const pathname = usePathname();
   const [scrolled, setScrolled] = useState(false);
   const [open, setOpen] = useState(false);
   const [hovered, setHovered] = useState<string | null>(null);
-  const [active, setActive] = useState<string>("#home");
+  const [section, setSection] = useState<string>("#home");
 
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
@@ -33,7 +36,7 @@ export function Navbar() {
     return () => window.removeEventListener("scroll", onScroll);
   }, []);
 
-  // Scrollspy: highlight the nav link for the section currently in view.
+  // Scrollspy (home only): highlight the nav link for the section in view.
   useEffect(() => {
     const ids = [
       "home",
@@ -44,7 +47,7 @@ export function Navbar() {
     const obs = new IntersectionObserver(
       (entries) => {
         entries.forEach((e) => {
-          if (e.isIntersecting) setActive(`#${e.target.id}`);
+          if (e.isIntersecting) setSection(`#${e.target.id}`);
         });
       },
       { rootMargin: "-45% 0px -50% 0px", threshold: 0 }
@@ -54,7 +57,7 @@ export function Navbar() {
       if (el) obs.observe(el);
     });
     return () => obs.disconnect();
-  }, []);
+  }, [pathname]);
 
   useEffect(() => {
     document.body.style.overflow = open ? "hidden" : "";
@@ -62,6 +65,12 @@ export function Navbar() {
       document.body.style.overflow = "";
     };
   }, [open]);
+
+  const isActive = (href: string) => {
+    const hash = hashOf(href);
+    if (hash) return pathname === "/" && section === hash;
+    return pathname === href;
+  };
 
   return (
     <>
@@ -81,27 +90,27 @@ export function Navbar() {
         >
           <Logo />
 
-          {/* Center links: hover pill + scrollspy active dot */}
+          {/* Center links: hover pill + active indicator */}
           <ul
             onMouseLeave={() => setHovered(null)}
             className="hidden items-center md:flex"
           >
             {NAV_LINKS.map((link) => {
-              const isActive = hashOf(link.href) === active;
+              const active = isActive(link.href);
               return (
                 <li key={link.href} className="relative">
-                  <a
+                  <Link
                     href={link.href}
                     onMouseEnter={() => setHovered(link.href)}
                     className={cn(
                       "relative z-10 inline-block px-3.5 py-2 text-sm font-medium transition-colors",
-                      isActive
+                      active
                         ? "text-foreground"
                         : "text-muted hover:text-foreground"
                     )}
                   >
                     {link.label}
-                  </a>
+                  </Link>
                   {hovered === link.href && (
                     <motion.span
                       layoutId="nav-hover"
@@ -109,7 +118,7 @@ export function Navbar() {
                       className="absolute inset-0 rounded-full bg-surface-2"
                     />
                   )}
-                  {isActive && (
+                  {active && (
                     <motion.span
                       layoutId="nav-active"
                       transition={{ type: "spring", stiffness: 400, damping: 34 }}
@@ -172,16 +181,21 @@ export function Navbar() {
                       ease: [0.16, 1, 0.3, 1],
                     }}
                   >
-                    <a
+                    <Link
                       href={link.href}
                       onClick={() => setOpen(false)}
-                      className="flex items-baseline gap-3 font-display text-4xl font-bold tracking-tight text-foreground"
+                      className={cn(
+                        "flex items-baseline gap-3 font-display text-4xl font-bold tracking-tight transition-colors",
+                        isActive(link.href)
+                          ? "text-gradient-brand"
+                          : "text-foreground"
+                      )}
                     >
                       <span className="font-mono text-sm font-medium text-muted">
                         0{i + 1}
                       </span>
                       {link.label}
-                    </a>
+                    </Link>
                   </motion.li>
                 ))}
               </ul>

@@ -1,8 +1,8 @@
 "use client";
 
-import { useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import Link from "next/link";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutGrid,
   Inbox,
@@ -15,14 +15,19 @@ import {
   MessageSquare,
   ListChecks,
   ChevronDown,
+  ChevronLeft,
+  ChevronRight,
   Sparkles,
   ArrowUpRight,
   TrendingUp,
   Clock,
   CheckCircle2,
+  Circle,
   Filter,
   Rows3,
   GanttChartSquare,
+  Trash2,
+  X,
 } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
@@ -39,6 +44,7 @@ const MEMBERS = {
 } as const;
 
 type Who = keyof typeof MEMBERS;
+const MEMBER_KEYS = Object.keys(MEMBERS) as Who[];
 
 const LABELS = {
   Design: "bg-violet-500/15 text-violet-600 dark:text-violet-300",
@@ -47,24 +53,29 @@ const LABELS = {
   Content: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300",
   Growth: "bg-rose-500/15 text-rose-600 dark:text-rose-300",
 } as const;
+type Label = keyof typeof LABELS;
+const LABEL_KEYS = Object.keys(LABELS) as Label[];
 
 type Status = "backlog" | "inprogress" | "review" | "done";
+const STATUS_ORDER: Status[] = ["backlog", "inprogress", "review", "done"];
+
+type Priority = "High" | "Medium" | "Low";
 
 type Task = {
   id: string;
   title: string;
   status: Status;
-  label: keyof typeof LABELS;
+  label: Label;
   who: Who[];
   due: string;
-  priority: "High" | "Medium" | "Low";
+  priority: Priority;
   progress: number;
   comments?: number;
   subtasks?: string;
-  span: [number, number]; // timeline weeks (1-8)
+  span: [number, number];
 };
 
-const TASKS: Task[] = [
+const INITIAL_TASKS: Task[] = [
   { id: "FLO-128", title: "Redesign onboarding flow", status: "inprogress", label: "Design", who: ["SC", "ER"], due: "Jun 4", priority: "High", progress: 60, comments: 4, subtasks: "2/5", span: [2, 4] },
   { id: "FLO-131", title: "Build pricing API endpoint", status: "inprogress", label: "Eng", who: ["ML"], due: "Jun 6", priority: "High", progress: 35, comments: 3, span: [3, 5] },
   { id: "FLO-126", title: "Homepage hero copy v2", status: "review", label: "Content", who: ["DO"], due: "Jun 2", priority: "Medium", progress: 90, comments: 1, span: [1, 2] },
@@ -81,20 +92,19 @@ const COLUMNS: { key: Status; title: string; dot: string }[] = [
   { key: "review", title: "In review", dot: "bg-amber-500" },
   { key: "done", title: "Done", dot: "bg-emerald-500" },
 ];
+const statusMeta = (s: Status) => COLUMNS.find((c) => c.key === s)!;
+
+const PRIORITY: Record<Priority, string> = {
+  High: "bg-rose-500/15 text-rose-600 dark:text-rose-300",
+  Medium: "bg-amber-500/15 text-amber-600 dark:text-amber-300",
+  Low: "bg-slate-500/15 text-slate-500 dark:text-slate-300",
+};
 
 const ACTIVITY = [
   { who: "ER" as Who, text: "moved Mobile nav prototype to In review", time: "12m" },
   { who: "ML" as Who, text: "commented on Build pricing API endpoint", time: "48m" },
   { who: "SC" as Who, text: "completed Brand color palette", time: "2h" },
   { who: "DO" as Who, text: "created Homepage hero copy v2", time: "5h" },
-  { who: "PN" as Who, text: "closed Q2 referral program", time: "1d" },
-];
-
-const KPIS = [
-  { k: "Completed", v: "68%", sub: "+12% vs last sprint", icon: CheckCircle2, accent: "text-emerald-500" },
-  { k: "In progress", v: "2", sub: "across 2 people", icon: TrendingUp, accent: "text-primary" },
-  { k: "Due this week", v: "5", sub: "1 overdue", icon: Clock, accent: "text-amber-500" },
-  { k: "Sprint velocity", v: "41 pts", sub: "target 38", icon: BarChart3, accent: "text-sky-500" },
 ];
 
 /* --------------------------- primitives --------------------------- */
@@ -114,22 +124,51 @@ function Avatar({ who, className = "" }: { who: Who; className?: string }) {
   );
 }
 
-const PRIORITY: Record<Task["priority"], string> = {
-  High: "bg-rose-500/15 text-rose-600 dark:text-rose-300",
-  Medium: "bg-amber-500/15 text-amber-600 dark:text-amber-300",
-  Low: "bg-slate-500/15 text-slate-500 dark:text-slate-300",
+type Handlers = {
+  onToggleDone: (id: string) => void;
+  onMove: (id: string, dir: -1 | 1) => void;
+  onDelete: (id: string) => void;
 };
 
-function TaskCard({ t }: { t: Task }) {
+function TaskCard({ t, h }: { t: Task; h: Handlers }) {
+  const idx = STATUS_ORDER.indexOf(t.status);
+  const done = t.status === "done";
   return (
-    <div className="rounded-xl border border-border bg-surface p-3 shadow-sm transition-colors hover:border-primary/30">
-      <div className="flex items-center justify-between">
+    <motion.div
+      layout
+      initial={{ opacity: 0, y: 8 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, scale: 0.96 }}
+      className="group/card rounded-xl border border-border bg-surface p-3 shadow-sm transition-colors hover:border-primary/30"
+    >
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => h.onToggleDone(t.id)}
+          aria-label={done ? "Mark as not done" : "Mark as done"}
+          className="shrink-0"
+        >
+          {done ? (
+            <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+          ) : (
+            <Circle className="h-4 w-4 text-muted transition-colors hover:text-primary" />
+          )}
+        </button>
         <span className={cn("inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold", LABELS[t.label])}>
           {t.label}
         </span>
-        <span className="text-[10px] font-medium text-muted">{t.id}</span>
+        <span className="ml-auto text-[10px] font-medium text-muted">{t.id}</span>
+        <button
+          type="button"
+          onClick={() => h.onDelete(t.id)}
+          aria-label="Delete task"
+          className="text-muted opacity-0 transition-opacity hover:text-rose-500 group-hover/card:opacity-100"
+        >
+          <Trash2 className="h-3.5 w-3.5" />
+        </button>
       </div>
-      <p className={cn("mt-2 text-sm font-medium leading-snug", t.status === "done" ? "text-muted line-through" : "text-foreground")}>
+
+      <p className={cn("mt-2 text-sm font-medium leading-snug", done ? "text-muted line-through" : "text-foreground")}>
         {t.title}
       </p>
 
@@ -161,30 +200,70 @@ function TaskCard({ t }: { t: Task }) {
           <span className="rounded-md bg-surface-2 px-1.5 py-0.5 font-medium">{t.due}</span>
         </div>
       </div>
-    </div>
+
+      {/* Move controls */}
+      <div className="mt-2 flex items-center justify-end gap-1 opacity-0 transition-opacity group-hover/card:opacity-100">
+        <button
+          type="button"
+          disabled={idx === 0}
+          onClick={() => h.onMove(t.id, -1)}
+          aria-label="Move left"
+          className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted transition-colors hover:text-foreground disabled:opacity-30"
+        >
+          <ChevronLeft className="h-3.5 w-3.5" />
+        </button>
+        <button
+          type="button"
+          disabled={idx === STATUS_ORDER.length - 1}
+          onClick={() => h.onMove(t.id, 1)}
+          aria-label="Move right"
+          className="flex h-6 w-6 items-center justify-center rounded-md border border-border text-muted transition-colors hover:text-foreground disabled:opacity-30"
+        >
+          <ChevronRight className="h-3.5 w-3.5" />
+        </button>
+      </div>
+    </motion.div>
   );
 }
 
 /* ----------------------------- views ----------------------------- */
 
-function BoardView() {
+function BoardView({ tasks, h, onAdd }: { tasks: Task[]; h: Handlers; onAdd: (s: Status) => void }) {
   return (
     <div className="grid gap-4 md:grid-cols-2 xl:grid-cols-4">
       {COLUMNS.map((col) => {
-        const items = TASKS.filter((t) => t.status === col.key);
+        const items = tasks.filter((t) => t.status === col.key);
         return (
           <div key={col.key} className="flex flex-col gap-3">
             <div className="flex items-center gap-2 px-0.5">
               <span className={cn("h-2 w-2 rounded-full", col.dot)} />
               <span className="text-sm font-semibold text-foreground">{col.title}</span>
               <span className="rounded-full bg-surface-2 px-1.5 text-[10px] font-semibold text-muted">{items.length}</span>
-              <button className="ml-auto text-muted transition-colors hover:text-foreground" aria-label="Add task">
+              <button
+                type="button"
+                onClick={() => onAdd(col.key)}
+                className="ml-auto text-muted transition-colors hover:text-foreground"
+                aria-label={`Add task to ${col.title}`}
+              >
                 <Plus className="h-4 w-4" />
               </button>
             </div>
-            {items.map((t) => (
-              <TaskCard key={t.id} t={t} />
-            ))}
+            <div className="flex flex-col gap-3">
+              <AnimatePresence initial={false}>
+                {items.map((t) => (
+                  <TaskCard key={t.id} t={t} h={h} />
+                ))}
+              </AnimatePresence>
+              {items.length === 0 && (
+                <button
+                  type="button"
+                  onClick={() => onAdd(col.key)}
+                  className="rounded-xl border border-dashed border-border py-6 text-xs text-muted transition-colors hover:border-primary/40 hover:text-foreground"
+                >
+                  + Add task
+                </button>
+              )}
+            </div>
           </div>
         );
       })}
@@ -192,7 +271,7 @@ function BoardView() {
   );
 }
 
-function ListView() {
+function ListView({ tasks, h }: { tasks: Task[]; h: Handlers }) {
   return (
     <div className="overflow-hidden rounded-card border border-border">
       <div className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border bg-surface-2 px-4 py-2.5 text-[11px] font-semibold uppercase tracking-wider text-muted sm:grid-cols-[2fr_1fr_1fr_1fr_1fr]">
@@ -202,39 +281,62 @@ function ListView() {
         <span className="hidden sm:block">Due</span>
         <span className="text-right sm:text-left">Status</span>
       </div>
-      {TASKS.map((t) => (
-        <div
-          key={t.id}
-          className="grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border px-4 py-3 last:border-0 hover:bg-surface-2/50 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr]"
-        >
-          <div className="flex min-w-0 items-center gap-2.5">
-            <span className={cn("inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold", LABELS[t.label])}>
-              {t.label}
-            </span>
-            <span className="truncate text-sm font-medium text-foreground">{t.title}</span>
-          </div>
-          <div className="hidden -space-x-1.5 sm:flex">
-            {t.who.map((w) => (
-              <Avatar key={w} who={w} className="h-5 w-5" />
-            ))}
-          </div>
-          <div className="hidden sm:block">
-            <span className={cn("inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold", PRIORITY[t.priority])}>
-              {t.priority}
-            </span>
-          </div>
-          <span className="hidden text-sm text-muted sm:block">{t.due}</span>
-          <div className="flex items-center justify-end gap-1.5 sm:justify-start">
-            <span className={cn("h-1.5 w-1.5 rounded-full", COLUMNS.find((c) => c.key === t.status)?.dot)} />
-            <span className="text-xs text-muted">{COLUMNS.find((c) => c.key === t.status)?.title}</span>
-          </div>
-        </div>
-      ))}
+      <AnimatePresence initial={false}>
+        {tasks.map((t) => (
+          <motion.div
+            key={t.id}
+            layout
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="group grid grid-cols-[1fr_auto] items-center gap-4 border-b border-border px-4 py-3 last:border-0 hover:bg-surface-2/50 sm:grid-cols-[2fr_1fr_1fr_1fr_1fr]"
+          >
+            <div className="flex min-w-0 items-center gap-2.5">
+              <button type="button" onClick={() => h.onToggleDone(t.id)} aria-label="Toggle done" className="shrink-0">
+                {t.status === "done" ? (
+                  <CheckCircle2 className="h-4 w-4 text-emerald-500" />
+                ) : (
+                  <Circle className="h-4 w-4 text-muted hover:text-primary" />
+                )}
+              </button>
+              <span className={cn("inline-flex shrink-0 rounded-md px-1.5 py-0.5 text-[10px] font-semibold", LABELS[t.label])}>
+                {t.label}
+              </span>
+              <span className={cn("truncate text-sm font-medium", t.status === "done" ? "text-muted line-through" : "text-foreground")}>
+                {t.title}
+              </span>
+            </div>
+            <div className="hidden -space-x-1.5 sm:flex">
+              {t.who.map((w) => (
+                <Avatar key={w} who={w} className="h-5 w-5" />
+              ))}
+            </div>
+            <div className="hidden sm:block">
+              <span className={cn("inline-flex rounded-md px-1.5 py-0.5 text-[10px] font-semibold", PRIORITY[t.priority])}>
+                {t.priority}
+              </span>
+            </div>
+            <span className="hidden text-sm text-muted sm:block">{t.due}</span>
+            <div className="flex items-center justify-end gap-1.5 sm:justify-start">
+              <span className={cn("h-1.5 w-1.5 rounded-full", statusMeta(t.status).dot)} />
+              <span className="text-xs text-muted">{statusMeta(t.status).title}</span>
+              <button
+                type="button"
+                onClick={() => h.onDelete(t.id)}
+                aria-label="Delete"
+                className="ml-2 text-muted opacity-0 transition-opacity hover:text-rose-500 group-hover:opacity-100"
+              >
+                <Trash2 className="h-3.5 w-3.5" />
+              </button>
+            </div>
+          </motion.div>
+        ))}
+      </AnimatePresence>
     </div>
   );
 }
 
-function TimelineView() {
+function TimelineView({ tasks }: { tasks: Task[] }) {
   const weeks = Array.from({ length: 8 }, (_, i) => i + 1);
   return (
     <div className="overflow-x-auto rounded-card border border-border">
@@ -249,7 +351,7 @@ function TimelineView() {
             ))}
           </div>
         </div>
-        {TASKS.map((t) => (
+        {tasks.map((t) => (
           <div key={t.id} className="grid grid-cols-[200px_1fr] items-center border-b border-border last:border-0">
             <div className="truncate px-4 py-3 text-sm font-medium text-foreground">{t.title}</div>
             <div className="relative grid grid-cols-8 py-3">
@@ -273,6 +375,181 @@ function TimelineView() {
   );
 }
 
+/* --------------------------- new task modal --------------------------- */
+
+const fieldClass =
+  "w-full rounded-xl border border-border bg-background px-3.5 py-2 text-sm text-foreground placeholder:text-muted/70 outline-none transition-colors focus:border-primary focus:ring-2 focus:ring-primary/20";
+
+function NewTaskModal({
+  open,
+  defaultStatus,
+  onClose,
+  onCreate,
+}: {
+  open: boolean;
+  defaultStatus: Status;
+  onClose: () => void;
+  onCreate: (t: Omit<Task, "id" | "span">) => void;
+}) {
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    if (open) window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  return (
+    <AnimatePresence>
+      {open && (
+        <motion.div
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          onClick={onClose}
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+        >
+          <TaskForm defaultStatus={defaultStatus} onClose={onClose} onCreate={onCreate} />
+        </motion.div>
+      )}
+    </AnimatePresence>
+  );
+}
+
+function TaskForm({
+  defaultStatus,
+  onClose,
+  onCreate,
+}: {
+  defaultStatus: Status;
+  onClose: () => void;
+  onCreate: (t: Omit<Task, "id" | "span">) => void;
+}) {
+  const [title, setTitle] = useState("");
+  const [label, setLabel] = useState<Label>("Design");
+  const [who, setWho] = useState<Who>("SC");
+  const [priority, setPriority] = useState<Priority>("Medium");
+  const [due, setDue] = useState("");
+  const [status, setStatus] = useState<Status>(defaultStatus);
+
+  return (
+          <motion.form
+            initial={{ opacity: 0, y: 24, scale: 0.98 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 24, scale: 0.98 }}
+            transition={{ type: "spring", stiffness: 300, damping: 28 }}
+            onClick={(e) => e.stopPropagation()}
+            onSubmit={(e) => {
+              e.preventDefault();
+              if (!title.trim()) return;
+              onCreate({
+                title: title.trim(),
+                label,
+                who: [who],
+                priority,
+                due: due.trim() || "—",
+                status,
+                progress: status === "done" ? 100 : 0,
+              });
+              onClose();
+            }}
+            className="w-full max-w-lg rounded-t-2xl border border-border bg-surface p-6 shadow-2xl sm:rounded-2xl"
+          >
+            <div className="flex items-center justify-between">
+              <h2 className="font-display text-lg font-semibold text-foreground">New task</h2>
+              <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-foreground">
+                <X className="h-5 w-5" />
+              </button>
+            </div>
+
+            <div className="mt-5 flex flex-col gap-4">
+              <div>
+                <label htmlFor="t-title" className="mb-1.5 block text-sm font-medium text-foreground">
+                  Title
+                </label>
+                <input
+                  id="t-title"
+                  autoFocus
+                  value={title}
+                  onChange={(e) => setTitle(e.target.value)}
+                  placeholder="e.g. Draft Q3 launch plan"
+                  className={fieldClass}
+                />
+              </div>
+
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <label htmlFor="t-label" className="mb-1.5 block text-sm font-medium text-foreground">
+                    Label
+                  </label>
+                  <select id="t-label" value={label} onChange={(e) => setLabel(e.target.value as Label)} className={fieldClass}>
+                    {LABEL_KEYS.map((l) => (
+                      <option key={l}>{l}</option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="t-assignee" className="mb-1.5 block text-sm font-medium text-foreground">
+                    Assignee
+                  </label>
+                  <select id="t-assignee" value={who} onChange={(e) => setWho(e.target.value as Who)} className={fieldClass}>
+                    {MEMBER_KEYS.map((w) => (
+                      <option key={w}>{w}</option>
+                    ))}
+                  </select>
+                </div>
+              </div>
+
+              <div className="grid grid-cols-3 gap-4">
+                <div>
+                  <label htmlFor="t-priority" className="mb-1.5 block text-sm font-medium text-foreground">
+                    Priority
+                  </label>
+                  <select id="t-priority" value={priority} onChange={(e) => setPriority(e.target.value as Priority)} className={fieldClass}>
+                    <option>High</option>
+                    <option>Medium</option>
+                    <option>Low</option>
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="t-status" className="mb-1.5 block text-sm font-medium text-foreground">
+                    Status
+                  </label>
+                  <select id="t-status" value={status} onChange={(e) => setStatus(e.target.value as Status)} className={fieldClass}>
+                    {COLUMNS.map((c) => (
+                      <option key={c.key} value={c.key}>
+                        {c.title}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+                <div>
+                  <label htmlFor="t-due" className="mb-1.5 block text-sm font-medium text-foreground">
+                    Due
+                  </label>
+                  <input id="t-due" value={due} onChange={(e) => setDue(e.target.value)} placeholder="Jun 12" className={fieldClass} />
+                </div>
+              </div>
+            </div>
+
+            <div className="mt-6 flex justify-end gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="rounded-xl border border-border bg-surface px-4 py-2 text-sm font-medium text-foreground hover:bg-surface-2"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                className="inline-flex items-center gap-1.5 rounded-xl bg-gradient-to-b from-primary to-primary-hover px-4 py-2 text-sm font-medium text-primary-foreground shadow-sm shadow-primary/30 hover:-translate-y-0.5"
+              >
+                <Plus className="h-4 w-4" />
+                Create task
+              </button>
+            </div>
+          </motion.form>
+  );
+}
+
 /* ----------------------------- shell ----------------------------- */
 
 const VIEWS = [
@@ -283,6 +560,73 @@ const VIEWS = [
 
 export function DashboardApp() {
   const [view, setView] = useState<(typeof VIEWS)[number]["key"]>("board");
+  const [tasks, setTasks] = useState<Task[]>(INITIAL_TASKS);
+  const [query, setQuery] = useState("");
+  const [hideDone, setHideDone] = useState(false);
+  const [seq, setSeq] = useState(143);
+  const [modalOpen, setModalOpen] = useState(false);
+  const [modalStatus, setModalStatus] = useState<Status>("backlog");
+
+  const filtered = useMemo(() => {
+    const q = query.trim().toLowerCase();
+    return tasks.filter(
+      (t) => (!q || t.title.toLowerCase().includes(q)) && (!hideDone || t.status !== "done")
+    );
+  }, [tasks, query, hideDone]);
+
+  const stats = useMemo(() => {
+    const total = tasks.length;
+    const done = tasks.filter((t) => t.status === "done").length;
+    const inProgress = tasks.filter((t) => t.status === "inprogress").length;
+    return {
+      total,
+      done,
+      inProgress,
+      left: total - done,
+      pct: total ? Math.round((done / total) * 100) : 0,
+    };
+  }, [tasks]);
+
+  const handlers: Handlers = {
+    onToggleDone: (id) =>
+      setTasks((prev) =>
+        prev.map((t) =>
+          t.id === id
+            ? t.status === "done"
+              ? { ...t, status: "inprogress", progress: 60 }
+              : { ...t, status: "done", progress: 100 }
+            : t
+        )
+      ),
+    onMove: (id, dir) =>
+      setTasks((prev) =>
+        prev.map((t) => {
+          if (t.id !== id) return t;
+          const i = STATUS_ORDER.indexOf(t.status);
+          const ni = Math.min(STATUS_ORDER.length - 1, Math.max(0, i + dir));
+          const status = STATUS_ORDER[ni];
+          return { ...t, status, progress: status === "done" ? 100 : t.progress };
+        })
+      ),
+    onDelete: (id) => setTasks((prev) => prev.filter((t) => t.id !== id)),
+  };
+
+  const createTask = (data: Omit<Task, "id" | "span">) => {
+    setTasks((prev) => [{ ...data, id: `FLO-${seq}`, span: [1, 2] }, ...prev]);
+    setSeq((n) => n + 1);
+  };
+
+  const openModal = (status: Status) => {
+    setModalStatus(status);
+    setModalOpen(true);
+  };
+
+  const KPIS = [
+    { k: "Completed", v: `${stats.pct}%`, sub: `${stats.done} of ${stats.total} done`, icon: CheckCircle2, accent: "text-emerald-500" },
+    { k: "In progress", v: `${stats.inProgress}`, sub: "active now", icon: TrendingUp, accent: "text-primary" },
+    { k: "Tasks left", v: `${stats.left}`, sub: "to complete", icon: Clock, accent: "text-amber-500" },
+    { k: "Velocity", v: "41 pts", sub: "target 38", icon: BarChart3, accent: "text-sky-500" },
+  ];
 
   return (
     <div className="flex min-h-screen bg-background">
@@ -304,11 +648,11 @@ export function DashboardApp() {
             { icon: BarChart3, label: "Reports" },
             { icon: Settings, label: "Settings" },
           ].map(({ icon: Icon, label, active, badge }) => (
-            <a
+            <button
               key={label}
-              href="/dashboard"
+              type="button"
               className={cn(
-                "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px]",
+                "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px]",
                 active ? "bg-primary/10 font-semibold text-primary" : "text-muted hover:text-foreground"
               )}
             >
@@ -317,7 +661,7 @@ export function DashboardApp() {
               {badge && (
                 <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white">{badge}</span>
               )}
-            </a>
+            </button>
           ))}
         </nav>
 
@@ -328,17 +672,17 @@ export function DashboardApp() {
             { name: "Mobile App", color: "bg-emerald-500" },
             { name: "Q3 Marketing", color: "bg-amber-500" },
           ].map((p) => (
-            <a
+            <button
               key={p.name}
-              href="/dashboard"
+              type="button"
               className={cn(
-                "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px]",
+                "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px]",
                 p.active ? "font-medium text-foreground" : "text-muted hover:text-foreground"
               )}
             >
               <span className={cn("h-2 w-2 rounded-full", p.color)} />
               {p.name}
-            </a>
+            </button>
           ))}
         </div>
 
@@ -347,7 +691,11 @@ export function DashboardApp() {
             <Sparkles className="h-3.5 w-3.5 text-primary" /> Flowly AI
           </div>
           <p className="mt-1 text-[11px] leading-snug text-muted">Summarize this sprint and flag at-risk tasks.</p>
-          <button className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary">
+          <button
+            type="button"
+            onClick={() => openModal("backlog")}
+            className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary"
+          >
             Try it <ArrowUpRight className="h-3 w-3" />
           </button>
         </div>
@@ -367,10 +715,14 @@ export function DashboardApp() {
             </div>
           </div>
 
-          <div className="ml-auto hidden items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs text-muted md:flex">
-            <Search className="h-3.5 w-3.5" />
-            Search tasks
-            <kbd className="ml-2 rounded border border-border bg-surface-2 px-1 text-[10px]">⌘K</kbd>
+          <div className="ml-auto hidden items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs md:flex">
+            <Search className="h-3.5 w-3.5 text-muted" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search tasks"
+              className="w-32 bg-transparent text-foreground placeholder:text-muted outline-none"
+            />
           </div>
 
           <div className="hidden -space-x-1.5 sm:flex">
@@ -386,7 +738,11 @@ export function DashboardApp() {
             <Bell className="h-4 w-4" />
           </button>
           <ThemeToggle />
-          <button className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-b from-primary to-primary-hover px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/30">
+          <button
+            type="button"
+            onClick={() => openModal("backlog")}
+            className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-b from-primary to-primary-hover px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/30"
+          >
             <Plus className="h-3.5 w-3.5" /> New
           </button>
         </header>
@@ -409,7 +765,7 @@ export function DashboardApp() {
             </div>
 
             {/* Toolbar */}
-            <div className="mt-6 flex items-center gap-3">
+            <div className="mt-6 flex flex-wrap items-center gap-3">
               <div className="inline-flex items-center rounded-lg border border-border bg-surface p-0.5">
                 {VIEWS.map((v) => {
                   const active = view === v.key;
@@ -435,17 +791,40 @@ export function DashboardApp() {
                   );
                 })}
               </div>
-              <button className="inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted hover:text-foreground">
+
+              <button
+                type="button"
+                onClick={() => setHideDone((v) => !v)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-lg border px-3 py-1.5 text-xs font-medium transition-colors",
+                  hideDone
+                    ? "border-primary/40 bg-primary/10 text-primary"
+                    : "border-border bg-surface text-muted hover:text-foreground"
+                )}
+              >
                 <Filter className="h-3.5 w-3.5" />
-                Filter
+                {hideDone ? "Showing active" : "Hide done"}
               </button>
+
+              {/* Mobile search */}
+              <div className="flex items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs md:hidden">
+                <Search className="h-3.5 w-3.5 text-muted" />
+                <input
+                  value={query}
+                  onChange={(e) => setQuery(e.target.value)}
+                  placeholder="Search"
+                  className="w-24 bg-transparent text-foreground placeholder:text-muted outline-none"
+                />
+              </div>
+
+              <span className="ml-auto text-xs text-muted">{filtered.length} tasks</span>
             </div>
 
             {/* View */}
             <div className="mt-5">
-              {view === "board" && <BoardView />}
-              {view === "list" && <ListView />}
-              {view === "timeline" && <TimelineView />}
+              {view === "board" && <BoardView tasks={filtered} h={handlers} onAdd={openModal} />}
+              {view === "list" && <ListView tasks={filtered} h={handlers} />}
+              {view === "timeline" && <TimelineView tasks={filtered} />}
             </div>
           </div>
 
@@ -471,17 +850,23 @@ export function DashboardApp() {
             <div className="mt-4 rounded-card border border-border bg-surface p-4">
               <h3 className="text-sm font-semibold text-foreground">Sprint progress</h3>
               <div className="mt-3 flex items-end justify-between">
-                <span className="font-display text-3xl font-bold text-foreground">68%</span>
-                <span className="text-xs text-emerald-500">+12%</span>
+                <span className="font-display text-3xl font-bold text-foreground">{stats.pct}%</span>
+                <span className="text-xs text-emerald-500">{stats.done}/{stats.total}</span>
               </div>
               <div className="mt-2 h-2 w-full overflow-hidden rounded-full bg-surface-2">
-                <div className="h-full rounded-full bg-gradient-to-r from-primary to-accent" style={{ width: "68%" }} />
+                <motion.div
+                  className="h-full rounded-full bg-gradient-to-r from-primary to-accent"
+                  animate={{ width: `${stats.pct}%` }}
+                  transition={{ type: "spring", stiffness: 200, damping: 30 }}
+                />
               </div>
-              <p className="mt-2 text-[11px] text-muted">23 of 34 tasks complete · ends in 4 days</p>
+              <p className="mt-2 text-[11px] text-muted">{stats.left} tasks remaining · ends in 4 days</p>
             </div>
           </aside>
         </div>
       </div>
+
+      <NewTaskModal open={modalOpen} defaultStatus={modalStatus} onClose={() => setModalOpen(false)} onCreate={createTask} />
     </div>
   );
 }
