@@ -73,7 +73,11 @@ export function AuthShell({
   return (
     <div className="grid min-h-screen lg:grid-cols-2">
       {/* Form side */}
-      <div className="flex flex-col px-6 py-8 sm:px-10">
+      <div className="relative flex flex-col overflow-hidden px-6 py-8 sm:px-10">
+        {/* subtle backdrop so the form side never feels flat */}
+        <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,black,transparent)]" />
+        <div className="pointer-events-none absolute -top-24 left-1/2 -z-10 h-72 w-72 -translate-x-1/2 rounded-full bg-primary/15 blur-[120px]" />
+
         <div className="flex items-center justify-between">
           <Logo />
           <ThemeToggle />
@@ -81,12 +85,22 @@ export function AuthShell({
 
         <div className="flex flex-1 items-center justify-center py-12">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1] }}
+            initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+            transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="w-full max-w-sm"
           >
-            <h1 className="font-display text-3xl font-bold tracking-tight text-foreground">
+            {/* Mobile-only rating (brand panel is hidden on small screens) */}
+            <div className="mb-6 flex items-center gap-1 text-accent lg:hidden">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Star key={i} className="h-3.5 w-3.5 fill-current" />
+              ))}
+              <span className="ml-2 text-xs font-medium text-muted">
+                4.9 / 5 · loved by 12,000+ teams
+              </span>
+            </div>
+
+            <h1 className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
               {title}
             </h1>
             <p className="mt-2 text-muted">{subtitle}</p>

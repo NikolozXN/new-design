@@ -451,8 +451,11 @@ function TaskForm({
               });
               onClose();
             }}
-            className="w-full max-w-lg rounded-t-2xl border border-border bg-surface p-6 shadow-2xl sm:rounded-2xl"
+            className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 shadow-2xl sm:max-h-[88vh] sm:rounded-2xl sm:p-6"
           >
+            {/* Mobile grab handle */}
+            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border sm:hidden" />
+
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-foreground">New task</h2>
               <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-foreground">
@@ -498,7 +501,7 @@ function TaskForm({
                 </div>
               </div>
 
-              <div className="grid grid-cols-3 gap-4">
+              <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label htmlFor="t-priority" className="mb-1.5 block text-sm font-medium text-foreground">
                     Priority
@@ -521,12 +524,13 @@ function TaskForm({
                     ))}
                   </select>
                 </div>
-                <div>
-                  <label htmlFor="t-due" className="mb-1.5 block text-sm font-medium text-foreground">
-                    Due
-                  </label>
-                  <input id="t-due" value={due} onChange={(e) => setDue(e.target.value)} placeholder="Jun 12" className={fieldClass} />
-                </div>
+              </div>
+
+              <div>
+                <label htmlFor="t-due" className="mb-1.5 block text-sm font-medium text-foreground">
+                  Due date
+                </label>
+                <input id="t-due" value={due} onChange={(e) => setDue(e.target.value)} placeholder="e.g. Jun 12" className={fieldClass} />
               </div>
             </div>
 
@@ -704,47 +708,49 @@ export function DashboardApp() {
       {/* Main */}
       <div className="flex min-w-0 flex-1 flex-col">
         {/* Top bar */}
-        <header className="sticky top-0 z-20 flex items-center gap-3 border-b border-border bg-background/80 px-4 py-3 backdrop-blur sm:px-6">
-          <div className="min-w-0">
-            <div className="text-[11px] text-muted">Projects / Website Revamp</div>
+        <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background/80 px-4 py-3 backdrop-blur sm:gap-3 sm:px-6">
+          <div className="min-w-0 flex-1">
+            <div className="truncate text-[11px] text-muted">Projects / Website Revamp</div>
             <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              Sprint 14 · Board
-              <span className="rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300">
+              <span className="truncate">Sprint 14 · Board</span>
+              <span className="hidden shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300 sm:inline">
                 On track
               </span>
             </div>
           </div>
 
-          <div className="ml-auto hidden items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs md:flex">
-            <Search className="h-3.5 w-3.5 text-muted" />
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search tasks"
-              className="w-32 bg-transparent text-foreground placeholder:text-muted outline-none"
-            />
-          </div>
+          <div className="flex shrink-0 items-center gap-2">
+            <div className="hidden items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs lg:flex">
+              <Search className="h-3.5 w-3.5 text-muted" />
+              <input
+                value={query}
+                onChange={(e) => setQuery(e.target.value)}
+                placeholder="Search tasks"
+                className="w-28 bg-transparent text-foreground placeholder:text-muted outline-none"
+              />
+            </div>
 
-          <div className="hidden -space-x-1.5 sm:flex">
-            <Avatar who="SC" />
-            <Avatar who="ML" />
-            <Avatar who="ER" />
-            <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-[10px] font-semibold text-muted ring-2 ring-surface">
-              +5
-            </span>
-          </div>
+            <div className="hidden -space-x-1.5 md:flex">
+              <Avatar who="SC" />
+              <Avatar who="ML" />
+              <Avatar who="ER" />
+              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-[10px] font-semibold text-muted ring-2 ring-surface">
+                +5
+              </span>
+            </div>
 
-          <button className="text-muted transition-colors hover:text-foreground" aria-label="Notifications">
-            <Bell className="h-4 w-4" />
-          </button>
-          <ThemeToggle />
-          <button
-            type="button"
-            onClick={() => openModal("backlog")}
-            className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-b from-primary to-primary-hover px-3 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/30"
-          >
-            <Plus className="h-3.5 w-3.5" /> New
-          </button>
+            <button className="hidden text-muted transition-colors hover:text-foreground sm:block" aria-label="Notifications">
+              <Bell className="h-4 w-4" />
+            </button>
+            <ThemeToggle />
+            <button
+              type="button"
+              onClick={() => openModal("backlog")}
+              className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-b from-primary to-primary-hover px-2.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/30 sm:px-3"
+            >
+              <Plus className="h-3.5 w-3.5" /> New
+            </button>
+          </div>
         </header>
 
         {/* Content */}
