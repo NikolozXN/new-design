@@ -9,6 +9,12 @@ import {
   Globe,
   Compass,
   ArrowUpRight,
+  ArrowRight,
+  Quote,
+  Plane,
+  GraduationCap,
+  BadgeDollarSign,
+  HeartHandshake,
 } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { PageHero } from "@/components/ui/page-hero";
@@ -54,6 +60,20 @@ const TEAM = [
   { name: "Diego Ortega", role: "Head of Design", from: "#10b981", to: "#34d399" },
   { name: "Elena Rossi", role: "VP Engineering", from: "#ec4899", to: "#f43f5e" },
   { name: "Jonas Weber", role: "Head of Growth", from: "#6366f1", to: "#818cf8" },
+];
+
+const PERKS = [
+  { icon: Plane, title: "Remote-first", body: "Work from anywhere across 14 time zones." },
+  { icon: BadgeDollarSign, title: "Meaningful equity", body: "Every Flowlian owns a real piece of the company." },
+  { icon: GraduationCap, title: "$2k learning budget", body: "Books, courses, and conferences — on us." },
+  { icon: HeartHandshake, title: "Health & wellness", body: "Top-tier coverage plus a monthly wellness stipend." },
+];
+
+const ROLES = [
+  { title: "Senior Product Designer", team: "Design", location: "Remote" },
+  { title: "Backend Engineer, Realtime", team: "Engineering", location: "SF / Remote" },
+  { title: "Developer Advocate", team: "Growth", location: "Remote" },
+  { title: "Customer Success Lead", team: "Success", location: "London" },
 ];
 
 function initials(name: string) {
@@ -167,6 +187,41 @@ export function About() {
         </div>
       </Container>
 
+      {/* Founder's note */}
+      <Container className="pb-6 sm:pb-10">
+        <motion.figure
+          initial={{ opacity: 0, y: 28 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={inView}
+          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+          className="relative mx-auto max-w-3xl overflow-hidden rounded-card border border-border bg-surface p-8 text-center shadow-xl shadow-black/5 sm:p-12 dark:shadow-black/30"
+        >
+          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
+          <Quote className="mx-auto h-8 w-8 text-primary/70" />
+          <blockquote className="mt-5 text-balance font-display text-xl font-semibold leading-snug tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
+            “We&apos;re not building another tool to add to the pile. We&apos;re building the one
+            that makes the pile disappear.”
+          </blockquote>
+          <figcaption className="mt-7 flex items-center justify-center gap-4">
+            <div className="flex -space-x-3">
+              {[TEAM[0], TEAM[1]].map((m) => (
+                <span
+                  key={m.name}
+                  className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white ring-2 ring-surface"
+                  style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
+                >
+                  {initials(m.name)}
+                </span>
+              ))}
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-semibold text-foreground">Sofia Chen &amp; Marcus Lee</div>
+              <div className="text-xs text-muted">Co-founders, Flowly</div>
+            </div>
+          </figcaption>
+        </motion.figure>
+      </Container>
+
       {/* Milestones timeline */}
       <section className="relative overflow-hidden py-16 sm:py-24">
         <Aurora className="opacity-60" />
@@ -260,6 +315,76 @@ export function About() {
           ))}
         </motion.div>
       </Container>
+
+      {/* Careers */}
+      <section className="relative overflow-hidden border-t border-border bg-surface-2/40 py-20 sm:py-28">
+        <Aurora className="opacity-40" />
+        <Container>
+          <SectionHeading
+            eyebrow="Careers"
+            title="Build the future of work with us"
+            subtitle="We're a small, senior team that ships fast and sweats the details. Come help us give millions of people their focus back."
+          />
+
+          <motion.div
+            variants={staggerContainer(0.08)}
+            initial="hidden"
+            whileInView="show"
+            viewport={inView}
+            className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4"
+          >
+            {PERKS.map((p) => (
+              <motion.div
+                key={p.title}
+                variants={fadeUp}
+                className="rounded-card border border-border bg-surface p-5 transition-transform hover:-translate-y-0.5"
+              >
+                <IconTile icon={p.icon} size="sm" />
+                <h3 className="mt-4 text-sm font-semibold text-foreground">{p.title}</h3>
+                <p className="mt-1 text-sm leading-relaxed text-muted">{p.body}</p>
+              </motion.div>
+            ))}
+          </motion.div>
+
+          <motion.div
+            variants={staggerContainer(0.06)}
+            initial="hidden"
+            whileInView="show"
+            viewport={inView}
+            className="mx-auto mt-10 max-w-3xl overflow-hidden rounded-card border border-border bg-surface"
+          >
+            <div className="border-b border-border px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
+              {ROLES.length} open roles
+            </div>
+            {ROLES.map((r) => (
+              <motion.a
+                key={r.title}
+                variants={fadeUp}
+                href="/contact"
+                className="group flex items-center gap-4 border-b border-border px-5 py-4 transition-colors last:border-0 hover:bg-surface-2/60"
+              >
+                <div className="min-w-0 flex-1">
+                  <div className="font-medium text-foreground">{r.title}</div>
+                  <div className="mt-0.5 text-xs text-muted">
+                    {r.team} · {r.location}
+                  </div>
+                </div>
+                <span className="inline-flex items-center gap-1 text-sm font-medium text-primary opacity-0 transition-opacity group-hover:opacity-100">
+                  Apply
+                </span>
+                <ArrowRight className="h-4 w-4 shrink-0 text-muted transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
+              </motion.a>
+            ))}
+          </motion.div>
+
+          <div className="mt-8 flex justify-center">
+            <Button href="/contact" variant="secondary">
+              See all open roles
+              <ArrowUpRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </Container>
+      </section>
     </>
   );
 }

@@ -11,7 +11,9 @@ import {
   Clock,
   Star,
   Globe,
+  MapPin,
 } from "lucide-react";
+import { SectionHeading } from "@/components/ui/section-heading";
 import { Container } from "@/components/ui/container";
 import { PageHero } from "@/components/ui/page-hero";
 import { IconTile } from "@/components/ui/icon-tile";
@@ -28,6 +30,19 @@ const TRUST = [
   { icon: Clock, label: "Avg. first reply", value: "< 2 hours" },
   { icon: Star, label: "Support rating", value: "4.9 / 5" },
   { icon: Globe, label: "Coverage", value: "14 time zones" },
+];
+
+const OFFICES = [
+  { city: "San Francisco", hq: true, address: "2261 Market St, CA 94114", tz: "PST · UTC−8" },
+  { city: "London", hq: false, address: "70 Wilson St, EC2A 2DB", tz: "GMT · UTC+0" },
+  { city: "Singapore", hq: false, address: "12 Marina Blvd, 018982", tz: "SGT · UTC+8" },
+];
+
+const FAQS = [
+  { q: "How fast will I hear back?", a: "Most messages get a reply within one business day. Sales demos are usually scheduled within a few hours." },
+  { q: "Do you help with onboarding?", a: "Yes — every paid plan includes guided onboarding and free migration assistance from your current tool." },
+  { q: "Can I get a tailored demo?", a: "Absolutely. Choose “Talk to sales” and we'll build a walkthrough around your team's exact workflow." },
+  { q: "Is my data secure?", a: "Flowly is SOC 2 Type II certified, with SSO, granular permissions, and encryption at rest and in transit." },
 ];
 
 const inputClass =
@@ -122,6 +137,21 @@ export function Contact() {
                         <input id="email" name="email" type="email" required placeholder="jane@acme.com" className={inputClass} />
                       </div>
                     </div>
+                    <div>
+                      <label htmlFor="topic" className="mb-1.5 block text-sm font-medium text-foreground">
+                        I&apos;m reaching out about
+                      </label>
+                      <select id="topic" name="topic" defaultValue="" className={inputClass}>
+                        <option value="" disabled>
+                          Select a topic…
+                        </option>
+                        <option>Talk to sales</option>
+                        <option>Product support</option>
+                        <option>Partnership</option>
+                        <option>Press &amp; media</option>
+                        <option>Something else</option>
+                      </select>
+                    </div>
                     <div className="grid gap-4 sm:grid-cols-2">
                       <div>
                         <label htmlFor="company" className="mb-1.5 block text-sm font-medium text-foreground">
@@ -203,10 +233,56 @@ export function Contact() {
                   </div>
                 </motion.a>
               ))}
-              <motion.div variants={fadeUp} className="rounded-card border border-border bg-surface-2 p-5 text-sm text-muted">
-                <span className="font-semibold text-foreground">HQ.</span> 2261 Market St, San
-                Francisco, CA — remote-first across 14 time zones.
+            </motion.div>
+          </div>
+
+          {/* Offices */}
+          <motion.div
+            variants={staggerContainer(0.08)}
+            initial="hidden"
+            whileInView="show"
+            viewport={inView}
+            className="mt-16 grid gap-4 sm:mt-20 sm:grid-cols-3"
+          >
+            {OFFICES.map((o) => (
+              <motion.div
+                key={o.city}
+                variants={fadeUp}
+                className="rounded-card border border-border bg-surface p-5 transition-transform hover:-translate-y-0.5"
+              >
+                <div className="flex items-center gap-2">
+                  <MapPin className="h-4 w-4 text-primary" />
+                  <span className="font-semibold text-foreground">{o.city}</span>
+                  {o.hq && (
+                    <span className="rounded-full bg-primary/10 px-1.5 py-0.5 text-[10px] font-semibold text-primary">HQ</span>
+                  )}
+                </div>
+                <p className="mt-2 text-sm text-muted">{o.address}</p>
+                <p className="mt-1 font-mono text-xs text-muted/80">{o.tz}</p>
               </motion.div>
+            ))}
+          </motion.div>
+
+          {/* FAQ */}
+          <div className="mt-20 sm:mt-28">
+            <SectionHeading eyebrow="FAQ" title="Before you reach out" />
+            <motion.div
+              variants={staggerContainer(0.08)}
+              initial="hidden"
+              whileInView="show"
+              viewport={inView}
+              className="mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-2"
+            >
+              {FAQS.map((f) => (
+                <motion.div
+                  key={f.q}
+                  variants={fadeUp}
+                  className="rounded-card border border-border bg-surface p-6"
+                >
+                  <h3 className="font-semibold text-foreground">{f.q}</h3>
+                  <p className="mt-2 text-sm leading-relaxed text-muted">{f.a}</p>
+                </motion.div>
+              ))}
             </motion.div>
           </div>
         </Container>
