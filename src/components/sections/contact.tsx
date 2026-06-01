@@ -80,8 +80,8 @@ export function Contact() {
           <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr] lg:gap-12">
             {/* Form */}
             <motion.div
-              initial={{ opacity: 0, y: 28, filter: "blur(6px)" }}
-              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
+              initial={{ opacity: 0, y: 28 }}
+              whileInView={{ opacity: 1, y: 0 }}
               viewport={inView}
               transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
               className="relative rounded-card border border-border bg-surface p-6 shadow-xl shadow-black/5 sm:p-8 dark:shadow-black/30"

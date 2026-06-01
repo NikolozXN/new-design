@@ -215,15 +215,14 @@ function FeaturesPinned() {
 
 export function Features() {
   const reduce = useReducedMotion();
-  // Start with the grid so SSR + first client paint match; upgrade to the
-  // pinned horizontal showcase after mount on every device (mobile included).
-  // Only users who request reduced motion keep the static grid.
   const [pinned, setPinned] = useState(false);
 
   useEffect(() => {
-    // One-time client gate: enable the pinned showcase unless reduced motion.
+    // Pinning is desktop-only — on phones it reserves huge scroll height and
+    // tanks frame rate. Mobile gets the animated grid instead.
+    const desktop = window.matchMedia("(min-width: 768px)").matches;
     // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPinned(!reduce);
+    setPinned(!reduce && desktop);
   }, [reduce]);
 
   return pinned ? <FeaturesPinned /> : <FeaturesGrid />;

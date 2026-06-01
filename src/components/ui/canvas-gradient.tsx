@@ -43,7 +43,11 @@ export function CanvasGradient({ className }: { className?: string }) {
 
     let w = 0;
     let h = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const mobile = window.matchMedia("(max-width: 768px)").matches;
+    const dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1 : 2);
+    const targetFps = mobile ? 24 : 30;
+    const frameMs = 1000 / targetFps;
+    let lastFrame = 0;
     const blobs: Blob[] = [];
     const mouse = { x: 0.5, y: 0.4, tx: 0.5, ty: 0.4 };
 
@@ -103,9 +107,12 @@ export function CanvasGradient({ className }: { className?: string }) {
 
     let raf = 0;
     let running = true;
-    const loop = () => {
+    const loop = (now: number) => {
       if (!running) return;
-      draw();
+      if (now - lastFrame >= frameMs) {
+        draw();
+        lastFrame = now;
+      }
       raf = requestAnimationFrame(loop);
     };
 
@@ -119,11 +126,24 @@ export function CanvasGradient({ className }: { className?: string }) {
       seed();
       draw();
     };
+    const onVisibility = () => {
+      if (document.hidden) {
+        running = false;
+        cancelAnimationFrame(raf);
+        return;
+      }
+      const rect = canvas!.getBoundingClientRect();
+      running =
+        !reduce &&
+        rect.bottom > 0 &&
+        rect.top < window.innerHeight;
+      if (running) raf = requestAnimationFrame(loop);
+    };
 
     const io = new IntersectionObserver(
       ([entry]) => {
-        running = entry.isIntersecting && !reduce;
-        if (running) loop();
+        running = entry.isIntersecting && !reduce && !document.hidden;
+        if (running) raf = requestAnimationFrame(loop);
         else cancelAnimationFrame(raf);
       },
       { threshold: 0 }
@@ -131,8 +151,9 @@ export function CanvasGradient({ className }: { className?: string }) {
     io.observe(canvas);
 
     if (!reduce) {
-      window.addEventListener("mousemove", onMouse);
+      window.addEventListener("mousemove", onMouse, { passive: true });
       window.addEventListener("resize", onResize);
+      document.addEventListener("visibilitychange", onVisibility);
     }
 
     return () => {
@@ -140,6 +161,7 @@ export function CanvasGradient({ className }: { className?: string }) {
       io.disconnect();
       window.removeEventListener("mousemove", onMouse);
       window.removeEventListener("resize", onResize);
+      document.removeEventListener("visibilitychange", onVisibility);
     };
   }, [reduce]);
 

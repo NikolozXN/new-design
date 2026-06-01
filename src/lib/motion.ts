@@ -10,13 +10,12 @@ export const staggerContainer = (stagger = 0.1, delay = 0): Variants => ({
   },
 });
 
-/** Child: fade + rise + slight blur (premium reveal). */
+/** Child: fade + rise (transform-only — blur animations tank scroll FPS). */
 export const fadeUp: Variants = {
-  hidden: { opacity: 0, y: 28, filter: "blur(8px)" },
+  hidden: { opacity: 0, y: 28 },
   show: {
     opacity: 1,
     y: 0,
-    filter: "blur(0px)",
     transition: { duration: 0.7, ease: EASE },
   },
 };
@@ -28,31 +27,28 @@ export const maskUp: Variants = {
 };
 
 export const fadeLeft: Variants = {
-  hidden: { opacity: 0, x: -48, filter: "blur(6px)" },
+  hidden: { opacity: 0, x: -48 },
   show: {
     opacity: 1,
     x: 0,
-    filter: "blur(0px)",
     transition: { duration: 0.7, ease: EASE },
   },
 };
 
 export const fadeRight: Variants = {
-  hidden: { opacity: 0, x: 48, filter: "blur(6px)" },
+  hidden: { opacity: 0, x: 48 },
   show: {
     opacity: 1,
     x: 0,
-    filter: "blur(0px)",
     transition: { duration: 0.7, ease: EASE },
   },
 };
 
 export const scaleUp: Variants = {
-  hidden: { opacity: 0, scale: 0.9, filter: "blur(8px)" },
+  hidden: { opacity: 0, scale: 0.92 },
   show: {
     opacity: 1,
     scale: 1,
-    filter: "blur(0px)",
     transition: { duration: 0.6, ease: EASE },
   },
 };
