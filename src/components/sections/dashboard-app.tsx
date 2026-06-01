@@ -387,7 +387,7 @@ function NewTaskModal({
           animate={{ opacity: 1 }}
           exit={{ opacity: 0 }}
           onClick={onClose}
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 p-0 backdrop-blur-sm sm:items-center sm:p-6"
+          className="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto overscroll-contain bg-black/50 p-4 pt-16 backdrop-blur-sm sm:items-center sm:p-6"
         >
           <TaskForm defaultStatus={defaultStatus} onClose={onClose} onCreate={onCreate} />
         </motion.div>
@@ -433,11 +433,8 @@ function TaskForm({
               });
               onClose();
             }}
-            className="max-h-[92vh] w-full max-w-lg overflow-y-auto rounded-t-2xl border border-border bg-surface p-5 shadow-2xl sm:max-h-[88vh] sm:rounded-2xl sm:p-6"
+            className="my-auto w-full max-w-lg rounded-2xl border border-border bg-surface p-5 shadow-2xl sm:p-6"
           >
-            {/* Mobile grab handle */}
-            <div className="mx-auto mb-4 h-1 w-10 rounded-full bg-border sm:hidden" />
-
             <div className="flex items-center justify-between">
               <h2 className="font-display text-lg font-semibold text-foreground">New task</h2>
               <button type="button" onClick={onClose} aria-label="Close" className="text-muted hover:text-foreground">
@@ -452,7 +449,6 @@ function TaskForm({
                 </label>
                 <input
                   id="t-title"
-                  autoFocus
                   value={title}
                   onChange={(e) => setTitle(e.target.value)}
                   placeholder="e.g. Draft Q3 launch plan"
@@ -672,7 +668,28 @@ export function DashboardApp() {
           ))}
         </div>
 
-        <div className="mt-auto rounded-xl border border-border bg-gradient-to-br from-primary/10 to-accent/10 p-3">
+        {/* Site pages — wired to the real routes in this template */}
+        <div className="mt-5 px-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted">Pages</div>
+        <div className="mt-1.5 flex flex-col gap-0.5">
+          {[
+            { label: "Landing page", href: "/" },
+            { label: "Pricing", href: "/pricing" },
+            { label: "About", href: "/about" },
+            { label: "Contact", href: "/contact" },
+            { label: "Sign in", href: "/login" },
+          ].map((p) => (
+            <Link
+              key={p.href}
+              href={p.href}
+              className="group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-muted transition-colors hover:bg-surface hover:text-foreground"
+            >
+              {p.label}
+              <ArrowUpRight className="ml-auto h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
+            </Link>
+          ))}
+        </div>
+
+        <div className="mt-6 rounded-xl border border-border bg-gradient-to-br from-primary/10 to-accent/10 p-3">
           <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground">
             <Sparkles className="h-3.5 w-3.5 text-primary" /> Flowly AI
           </div>

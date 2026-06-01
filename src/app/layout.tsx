@@ -17,21 +17,33 @@ const display = Space_Grotesk({
 });
 
 export const metadata: Metadata = {
+  metadataBase: new URL("https://flowly.example.com"),
   title: "Flowly — Project management that flows",
   description:
     "Flowly is the all-in-one project management platform that keeps your team aligned, focused, and shipping faster. Plan, track, and automate your work in one place.",
+  applicationName: "Flowly",
   keywords: [
     "project management",
     "team collaboration",
     "task tracking",
+    "sprint planning",
     "productivity",
     "saas",
   ],
+  authors: [{ name: "Flowly" }],
   openGraph: {
     title: "Flowly — Project management that flows",
     description:
       "Plan, track, and automate your work in one place. The project management platform your team will actually love.",
     type: "website",
+    siteName: "Flowly",
+    locale: "en_US",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "Flowly — Project management that flows",
+    description:
+      "Plan, track, and automate your work in one place. The project management platform your team will actually love.",
   },
 };
 
