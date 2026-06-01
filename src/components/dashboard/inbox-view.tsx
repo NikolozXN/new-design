@@ -1,169 +1,335 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useMemo, useRef, useState } from "react";
 import {
-  AtSign,
-  MessageSquare,
-  UserPlus,
-  CheckCircle2,
-  Clock,
+  Search,
+  Send,
+  ArrowLeft,
+  Phone,
+  Video,
+  Info,
   CheckCheck,
-  Inbox as InboxIcon,
+  Plus,
 } from "lucide-react";
 import { DashboardShell } from "./shell";
-import { Avatar, type Who } from "./people";
+import { Avatar, MEMBERS, type Who } from "./people";
 import { cn } from "@/lib/utils";
 
-type NotifType = "mention" | "comment" | "assigned" | "status" | "due";
+type Msg = { id: number; from: "me" | "them"; text: string; time: string };
 
-type Notif = {
+type Convo = {
   id: number;
   who: Who;
-  type: NotifType;
-  action: string;
-  target: string;
-  time: string;
-  group: "Today" | "Earlier";
-  unread: boolean;
+  online: boolean;
+  lastActive: string;
+  unread: number;
+  messages: Msg[];
 };
 
-const TYPE_META: Record<NotifType, { icon: typeof AtSign; tint: string }> = {
-  mention: { icon: AtSign, tint: "bg-violet-500/15 text-violet-600 dark:text-violet-300" },
-  comment: { icon: MessageSquare, tint: "bg-sky-500/15 text-sky-600 dark:text-sky-300" },
-  assigned: { icon: UserPlus, tint: "bg-amber-500/15 text-amber-600 dark:text-amber-300" },
-  status: { icon: CheckCircle2, tint: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-300" },
-  due: { icon: Clock, tint: "bg-rose-500/15 text-rose-600 dark:text-rose-300" },
-};
-
-const INITIAL: Notif[] = [
-  { id: 1, who: "ER", type: "mention", action: "mentioned you on", target: "Mobile nav prototype", time: "12m", group: "Today", unread: true },
-  { id: 2, who: "ML", type: "comment", action: "replied to your comment on", target: "Pricing API endpoint", time: "48m", group: "Today", unread: true },
-  { id: 3, who: "PN", type: "assigned", action: "assigned you to", target: "Competitor pricing audit", time: "2h", group: "Today", unread: true },
-  { id: 4, who: "DO", type: "status", action: "moved to In review", target: "Homepage hero copy", time: "5h", group: "Today", unread: false },
-  { id: 5, who: "SC", type: "comment", action: "left a note on", target: "Onboarding flow redesign", time: "Yesterday", group: "Earlier", unread: false },
-  { id: 6, who: "JW", type: "due", action: "set a due date on", target: "Analytics events setup", time: "Yesterday", group: "Earlier", unread: false },
-  { id: 7, who: "SC", type: "status", action: "completed", target: "Brand color palette", time: "2d", group: "Earlier", unread: false },
+const INITIAL: Convo[] = [
+  {
+    id: 1,
+    who: "ER",
+    online: true,
+    lastActive: "Active now",
+    unread: 2,
+    messages: [
+      { id: 1, from: "them", text: "Hey! Pushed the new mobile nav prototype 🎉", time: "9:24 AM" },
+      { id: 2, from: "them", text: "Can you take a look before standup?", time: "9:24 AM" },
+      { id: 3, from: "me", text: "On it — looking now", time: "9:31 AM" },
+      { id: 4, from: "them", text: "The hamburger animation feels much smoother now", time: "9:32 AM" },
+      { id: 5, from: "them", text: "Let me know if the spacing reads okay on small screens", time: "9:33 AM" },
+    ],
+  },
+  {
+    id: 2,
+    who: "ML",
+    online: true,
+    lastActive: "Active now",
+    unread: 0,
+    messages: [
+      { id: 1, from: "me", text: "Pricing API is returning a 500 on /plans", time: "Yesterday" },
+      { id: 2, from: "them", text: "Yep, caught it — bad cache key. Fix is in review", time: "Yesterday" },
+      { id: 3, from: "me", text: "Legend, thank you 🙏", time: "Yesterday" },
+    ],
+  },
+  {
+    id: 3,
+    who: "SC",
+    online: false,
+    lastActive: "Active 2h ago",
+    unread: 0,
+    messages: [
+      { id: 1, from: "them", text: "Brand palette is locked. Synced the tokens to Figma", time: "2h" },
+      { id: 2, from: "me", text: "Perfect, I'll wire them into the theme today", time: "2h" },
+    ],
+  },
+  {
+    id: 4,
+    who: "DO",
+    online: false,
+    lastActive: "Active 5h ago",
+    unread: 1,
+    messages: [
+      { id: 1, from: "them", text: "Homepage hero copy is ready for review", time: "5h" },
+    ],
+  },
+  {
+    id: 5,
+    who: "PN",
+    online: false,
+    lastActive: "Active yesterday",
+    unread: 0,
+    messages: [
+      { id: 1, from: "them", text: "Sharing the competitor pricing audit shortly", time: "1d" },
+      { id: 2, from: "me", text: "No rush — early next week is fine", time: "1d" },
+    ],
+  },
 ];
 
-const TABS = ["All", "Unread", "Mentions"] as const;
-type Tab = (typeof TABS)[number];
+const firstName = (who: Who) => MEMBERS[who].name.split(" ")[0];
 
 export function InboxView() {
-  const [items, setItems] = useState<Notif[]>(INITIAL);
-  const [tab, setTab] = useState<Tab>("All");
+  const [convos, setConvos] = useState<Convo[]>(INITIAL);
+  const [activeId, setActiveId] = useState<number>(INITIAL[0].id);
+  const [draft, setDraft] = useState("");
+  const [search, setSearch] = useState("");
+  const [showThread, setShowThread] = useState(false); // mobile only
+  const endRef = useRef<HTMLDivElement>(null);
 
-  const unreadCount = items.filter((n) => n.unread).length;
+  const active = convos.find((c) => c.id === activeId)!;
 
   const filtered = useMemo(() => {
-    if (tab === "Unread") return items.filter((n) => n.unread);
-    if (tab === "Mentions") return items.filter((n) => n.type === "mention");
-    return items;
-  }, [items, tab]);
+    const q = search.trim().toLowerCase();
+    if (!q) return convos;
+    return convos.filter(
+      (c) =>
+        MEMBERS[c.who].name.toLowerCase().includes(q) ||
+        c.messages[c.messages.length - 1]?.text.toLowerCase().includes(q)
+    );
+  }, [convos, search]);
 
-  const groups = useMemo(() => {
-    const order: Notif["group"][] = ["Today", "Earlier"];
-    return order
-      .map((g) => ({ group: g, rows: filtered.filter((n) => n.group === g) }))
-      .filter((g) => g.rows.length > 0);
-  }, [filtered]);
+  useEffect(() => {
+    endRef.current?.scrollIntoView({ block: "end" });
+  }, [activeId, active.messages.length]);
 
-  const markAll = () => setItems((prev) => prev.map((n) => ({ ...n, unread: false })));
-  const markRead = (id: number) =>
-    setItems((prev) => prev.map((n) => (n.id === id ? { ...n, unread: false } : n)));
+  const select = (id: number) => {
+    setActiveId(id);
+    setShowThread(true);
+    setConvos((prev) => prev.map((c) => (c.id === id ? { ...c, unread: 0 } : c)));
+  };
+
+  const send = (e: React.FormEvent) => {
+    e.preventDefault();
+    const text = draft.trim();
+    if (!text) return;
+    setConvos((prev) =>
+      prev.map((c) =>
+        c.id === activeId
+          ? { ...c, messages: [...c.messages, { id: Date.now(), from: "me", text, time: "now" }] }
+          : c
+      )
+    );
+    setDraft("");
+  };
 
   return (
-    <DashboardShell breadcrumb="Workspace / Notifications" title="Inbox" right={undefined}>
-      <div className="mx-auto w-full max-w-3xl p-4 sm:p-6">
-        <div className="flex flex-wrap items-center gap-3">
-          <div className="inline-flex items-center rounded-lg border border-border bg-surface p-0.5">
-            {TABS.map((t) => {
-              const active = tab === t;
+    <DashboardShell breadcrumb="Workspace / Messages" title="Inbox">
+      <div className="flex h-[calc(100dvh-7rem)] min-h-[480px] overflow-hidden lg:h-[calc(100dvh-3.75rem)]">
+        {/* Conversation list */}
+        <div
+          className={cn(
+            "w-full shrink-0 flex-col border-r border-border bg-surface md:flex md:w-80 lg:w-96",
+            showThread ? "hidden md:flex" : "flex"
+          )}
+        >
+          <div className="flex items-center justify-between px-4 pb-3 pt-4">
+            <h2 className="text-base font-semibold text-foreground">Messages</h2>
+            <button
+              type="button"
+              className="inline-flex h-8 w-8 items-center justify-center rounded-full text-muted transition-colors hover:bg-surface-2 hover:text-foreground"
+              aria-label="New message"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          </div>
+          <div className="px-4 pb-3">
+            <div className="flex items-center gap-2 rounded-full border border-border bg-background px-3 py-2 text-sm">
+              <Search className="h-4 w-4 text-muted" />
+              <input
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+                placeholder="Search messages"
+                className="w-full bg-transparent text-foreground placeholder:text-muted outline-none"
+              />
+            </div>
+          </div>
+
+          <div className="min-h-0 flex-1 overflow-y-auto px-2 pb-2">
+            {filtered.map((c) => {
+              const last = c.messages[c.messages.length - 1];
+              const isActive = c.id === activeId;
+              const mine = last?.from === "me";
               return (
                 <button
-                  key={t}
+                  key={c.id}
                   type="button"
-                  onClick={() => setTab(t)}
-                  className="relative inline-flex items-center gap-1.5 rounded-md px-3 py-1.5 text-xs font-medium"
-                >
-                  {active && (
-                    <motion.span
-                      layoutId="inbox-tab"
-                      transition={{ type: "spring", stiffness: 400, damping: 32 }}
-                      className="absolute inset-0 rounded-md bg-surface-2"
-                    />
+                  onClick={() => select(c.id)}
+                  className={cn(
+                    "flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-left transition-colors",
+                    isActive ? "bg-surface-2" : "hover:bg-surface-2/60"
                   )}
-                  <span className={cn("relative z-10", active ? "text-foreground" : "text-muted")}>
-                    {t}
-                    {t === "Unread" && unreadCount > 0 && (
-                      <span className="ml-1 rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white">
-                        {unreadCount}
-                      </span>
+                >
+                  <div className="relative shrink-0">
+                    <Avatar who={c.who} className="h-11 w-11 text-[12px]" />
+                    {c.online && (
+                      <span className="absolute -bottom-0.5 -right-0.5 h-3 w-3 rounded-full border-2 border-surface bg-emerald-500" />
                     )}
-                  </span>
+                  </div>
+                  <div className="min-w-0 flex-1">
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={cn(
+                          "truncate text-sm",
+                          c.unread ? "font-semibold text-foreground" : "font-medium text-foreground/90"
+                        )}
+                      >
+                        {MEMBERS[c.who].name}
+                      </span>
+                      <span className="shrink-0 text-[11px] text-muted">{last?.time}</span>
+                    </div>
+                    <div className="flex items-center justify-between gap-2">
+                      <span
+                        className={cn(
+                          "truncate text-xs",
+                          c.unread ? "text-foreground/80" : "text-muted"
+                        )}
+                      >
+                        {mine && "You: "}
+                        {last?.text}
+                      </span>
+                      {c.unread > 0 && (
+                        <span className="flex h-4 min-w-4 shrink-0 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-bold text-white">
+                          {c.unread}
+                        </span>
+                      )}
+                    </div>
+                  </div>
                 </button>
               );
             })}
+            {filtered.length === 0 && (
+              <p className="px-3 py-8 text-center text-xs text-muted">No conversations found.</p>
+            )}
           </div>
-
-          <button
-            type="button"
-            onClick={markAll}
-            disabled={unreadCount === 0}
-            className="ml-auto inline-flex items-center gap-1.5 rounded-lg border border-border bg-surface px-3 py-1.5 text-xs font-medium text-muted transition-colors hover:text-foreground disabled:cursor-not-allowed disabled:opacity-50"
-          >
-            <CheckCheck className="h-3.5 w-3.5" /> Mark all read
-          </button>
         </div>
 
-        {groups.length === 0 ? (
-          <div className="mt-10 flex flex-col items-center justify-center rounded-card border border-dashed border-border bg-surface py-16 text-center">
-            <InboxIcon className="h-8 w-8 text-muted" />
-            <p className="mt-3 text-sm font-medium text-foreground">You&apos;re all caught up</p>
-            <p className="mt-1 text-xs text-muted">No notifications in this view.</p>
-          </div>
-        ) : (
-          <div className="mt-6 space-y-6">
-            {groups.map(({ group, rows }) => (
-              <div key={group}>
-                <div className="px-1 text-[10px] font-semibold uppercase tracking-wider text-muted">{group}</div>
-                <div className="mt-2 overflow-hidden rounded-card border border-border bg-surface">
-                  {rows.map((n, i) => {
-                    const meta = TYPE_META[n.type];
-                    const Icon = meta.icon;
-                    return (
-                      <button
-                        key={n.id}
-                        type="button"
-                        onClick={() => markRead(n.id)}
-                        className={cn(
-                          "flex w-full items-center gap-3 px-4 py-3 text-left transition-colors hover:bg-surface-2",
-                          i !== 0 && "border-t border-border"
-                        )}
-                      >
-                        <span className={cn("flex h-8 w-8 shrink-0 items-center justify-center rounded-lg", meta.tint)}>
-                          <Icon className="h-4 w-4" />
-                        </span>
-                        <Avatar who={n.who} className="hidden sm:flex" />
-                        <p className="min-w-0 flex-1 text-[13px] leading-snug text-foreground/90">
-                          <span className="font-semibold text-foreground">{n.who}</span> {n.action}{" "}
-                          <span className="font-medium text-foreground">{n.target}</span>
-                        </p>
-                        <span className="shrink-0 text-[11px] text-muted">{n.time}</span>
-                        <span
-                          className={cn(
-                            "h-2 w-2 shrink-0 rounded-full",
-                            n.unread ? "bg-primary" : "bg-transparent"
-                          )}
-                        />
-                      </button>
-                    );
-                  })}
-                </div>
+        {/* Thread */}
+        <div
+          className={cn(
+            "min-w-0 flex-1 flex-col bg-background",
+            showThread ? "flex" : "hidden md:flex"
+          )}
+        >
+          {/* Thread header */}
+          <div className="flex items-center gap-3 border-b border-border px-4 py-3">
+            <button
+              type="button"
+              onClick={() => setShowThread(false)}
+              className="-ml-1 text-muted transition-colors hover:text-foreground md:hidden"
+              aria-label="Back to conversations"
+            >
+              <ArrowLeft className="h-5 w-5" />
+            </button>
+            <div className="relative shrink-0">
+              <Avatar who={active.who} className="h-9 w-9" />
+              {active.online && (
+                <span className="absolute -bottom-0.5 -right-0.5 h-2.5 w-2.5 rounded-full border-2 border-background bg-emerald-500" />
+              )}
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="truncate text-sm font-semibold text-foreground">{MEMBERS[active.who].name}</div>
+              <div className={cn("text-[11px]", active.online ? "text-emerald-600 dark:text-emerald-400" : "text-muted")}>
+                {active.lastActive}
               </div>
-            ))}
+            </div>
+            <div className="flex items-center gap-1 text-muted">
+              {[Phone, Video, Info].map((Icon, i) => (
+                <button
+                  key={i}
+                  type="button"
+                  className="hidden h-8 w-8 items-center justify-center rounded-full transition-colors hover:bg-surface-2 hover:text-foreground sm:inline-flex"
+                >
+                  <Icon className="h-4 w-4" />
+                </button>
+              ))}
+            </div>
           </div>
-        )}
+
+          {/* Messages */}
+          <div className="min-h-0 flex-1 space-y-1 overflow-y-auto px-4 py-5 sm:px-6">
+            <div className="mb-4 flex justify-center">
+              <span className="rounded-full bg-surface-2 px-2.5 py-1 text-[10px] font-medium text-muted">Today</span>
+            </div>
+            {active.messages.map((m, i) => {
+              const prev = active.messages[i - 1];
+              const startGroup = !prev || prev.from !== m.from;
+              const next = active.messages[i + 1];
+              const endGroup = !next || next.from !== m.from;
+              const mine = m.from === "me";
+              return (
+                <div
+                  key={m.id}
+                  className={cn(
+                    "flex items-end gap-2",
+                    mine ? "justify-end" : "justify-start",
+                    startGroup ? "mt-3" : "mt-0.5"
+                  )}
+                >
+                  {!mine && (
+                    <span className="w-7 shrink-0">
+                      {endGroup && <Avatar who={active.who} className="h-7 w-7 text-[10px]" />}
+                    </span>
+                  )}
+                  <div
+                    className={cn(
+                      "max-w-[78%] rounded-2xl px-3.5 py-2 text-sm leading-relaxed shadow-sm sm:max-w-[68%]",
+                      mine ? "bg-primary text-primary-foreground" : "bg-surface-2 text-foreground",
+                      mine && endGroup && "rounded-br-md",
+                      !mine && endGroup && "rounded-bl-md"
+                    )}
+                  >
+                    {m.text}
+                  </div>
+                </div>
+              );
+            })}
+            <div className="flex items-center justify-end gap-1 pr-1 pt-1 text-[10px] text-muted">
+              <CheckCheck className="h-3 w-3" /> Seen {active.messages[active.messages.length - 1]?.time}
+            </div>
+            <div ref={endRef} />
+          </div>
+
+          {/* Composer */}
+          <form onSubmit={send} className="border-t border-border px-3 py-3 sm:px-4">
+            <div className="flex items-end gap-2 rounded-2xl border border-border bg-surface px-3 py-2 transition-colors focus-within:border-primary focus-within:ring-2 focus-within:ring-primary/20">
+              <input
+                value={draft}
+                onChange={(e) => setDraft(e.target.value)}
+                placeholder={`Message ${firstName(active.who)}…`}
+                className="min-w-0 flex-1 bg-transparent py-1 text-sm text-foreground placeholder:text-muted outline-none"
+              />
+              <button
+                type="submit"
+                disabled={!draft.trim()}
+                className="inline-flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-gradient-to-b from-primary to-primary-hover text-primary-foreground shadow-sm shadow-primary/30 transition-opacity disabled:opacity-40"
+                aria-label="Send message"
+              >
+                <Send className="h-4 w-4" />
+              </button>
+            </div>
+          </form>
+        </div>
       </div>
     </DashboardShell>
   );
