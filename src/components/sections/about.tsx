@@ -64,12 +64,12 @@ const VALUES = [
 ];
 
 const TEAM = [
-  { name: "Sofia Chen", role: "Co-founder & CEO", from: "#7c3aed", to: "#a855f7" },
-  { name: "Marcus Lee", role: "Co-founder & CTO", from: "#0ea5e9", to: "#22d3ee" },
-  { name: "Priya Nair", role: "VP Product", from: "#f59e0b", to: "#f97316" },
-  { name: "Diego Ortega", role: "Head of Design", from: "#10b981", to: "#34d399" },
-  { name: "Elena Rossi", role: "VP Engineering", from: "#ec4899", to: "#f43f5e" },
-  { name: "Jonas Weber", role: "Head of Growth", from: "#6366f1", to: "#818cf8" },
+  { name: "Sofia Chen", role: "Co-founder & CEO", from: "#7c3aed", to: "#a855f7", img: "https://randomuser.me/api/portraits/women/44.jpg" },
+  { name: "Marcus Lee", role: "Co-founder & CTO", from: "#0ea5e9", to: "#22d3ee", img: "https://randomuser.me/api/portraits/men/32.jpg" },
+  { name: "Priya Nair", role: "VP Product", from: "#f59e0b", to: "#f97316", img: "https://randomuser.me/api/portraits/women/68.jpg" },
+  { name: "Diego Ortega", role: "Head of Design", from: "#10b981", to: "#34d399", img: "https://randomuser.me/api/portraits/men/75.jpg" },
+  { name: "Elena Rossi", role: "VP Engineering", from: "#ec4899", to: "#f43f5e", img: "https://randomuser.me/api/portraits/women/65.jpg" },
+  { name: "Jonas Weber", role: "Head of Growth", from: "#6366f1", to: "#818cf8", img: "https://randomuser.me/api/portraits/men/15.jpg" },
 ];
 
 const PERKS = [
@@ -132,42 +132,45 @@ function Station({
   const nodeScale = useTransform(progress, [slot - 0.1, slot], [0.3, 1]);
   const glow = useTransform(progress, [slot - 0.1, slot, slot + 0.18], [0, 1, 0.55]);
   const cardOpacity = useTransform(progress, [slot - 0.16, slot - 0.02], [0, 1]);
-  const cardY = useTransform(progress, [slot - 0.16, slot - 0.02], [above ? -36 : 36, 0]);
-  const yearOpacity = useTransform(progress, [slot - 0.12, slot], [0.15, 1]);
+  const cardY = useTransform(progress, [slot - 0.16, slot - 0.02], [above ? -28 : 28, 0]);
+  const yearY = useTransform(progress, [slot - 0.16, slot - 0.02], [above ? -56 : 56, 0]);
+  const yearOpacity = useTransform(progress, [slot - 0.12, slot], [0.12, 1]);
+
+  const card = (
+    <motion.div style={{ opacity: cardOpacity, y: cardY }} className="w-[80vw] max-w-[20rem] sm:w-[22rem]">
+      <motion.div
+        style={{ opacity: yearOpacity, y: yearY }}
+        className="font-display text-5xl font-bold leading-none tracking-tight text-gradient-brand sm:text-6xl md:text-7xl"
+      >
+        {m.year}
+      </motion.div>
+      <div className="mt-3 rounded-card border border-border bg-surface/80 p-4 shadow-xl shadow-black/5 backdrop-blur sm:mt-4 sm:p-5 dark:shadow-black/30">
+        <h3 className="font-display text-lg font-semibold text-foreground sm:text-xl">{m.title}</h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
+      </div>
+    </motion.div>
+  );
 
   return (
-    <div className="relative flex h-[62vh] max-h-[560px] w-[84vw] shrink-0 items-center justify-center sm:w-[26rem]">
-      {/* node on the rail */}
-      <motion.span style={{ scale: nodeScale }} className="absolute left-1/2 top-1/2 z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2">
-        <motion.span aria-hidden style={{ opacity: glow }} className="absolute -inset-2.5 rounded-full bg-primary blur-md" />
-        <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
-      </motion.span>
+    <div className="grid h-full w-[84vw] shrink-0 grid-rows-[1fr_auto_1fr] sm:w-[26rem]">
+      {/* top cell — card if this station sits above the rail */}
+      <div className="flex items-end justify-center pb-4 sm:pb-6">{above && card}</div>
 
-      {/* vertical stem from rail to card */}
-      <div
-        className={`absolute left-1/2 h-12 w-px -translate-x-1/2 bg-gradient-to-b from-primary/60 to-transparent ${
-          above ? "bottom-1/2 rotate-180" : "top-1/2"
-        }`}
-      />
+      {/* rail row — node + stem */}
+      <div className="relative flex items-center justify-center">
+        <div
+          className={`absolute left-1/2 h-10 w-px -translate-x-1/2 bg-gradient-to-b from-primary/60 to-transparent ${
+            above ? "bottom-1/2 rotate-180" : "top-1/2"
+          }`}
+        />
+        <motion.span style={{ scale: nodeScale }} className="relative z-10 h-5 w-5">
+          <motion.span aria-hidden style={{ opacity: glow }} className="absolute -inset-2.5 rounded-full bg-primary blur-md" />
+          <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
+        </motion.span>
+      </div>
 
-      {/* card */}
-      <motion.div
-        style={{ opacity: cardOpacity, y: cardY }}
-        className={`absolute left-1/2 w-[80%] max-w-xs -translate-x-1/2 ${
-          above ? "bottom-1/2 mb-14" : "top-1/2 mt-14"
-        }`}
-      >
-        <motion.div
-          style={{ opacity: yearOpacity }}
-          className="font-display text-6xl font-bold leading-none tracking-tight text-gradient-brand sm:text-7xl"
-        >
-          {m.year}
-        </motion.div>
-        <div className="mt-4 rounded-card border border-border bg-surface/80 p-5 shadow-xl shadow-black/5 backdrop-blur dark:shadow-black/30">
-          <h3 className="font-display text-xl font-semibold text-foreground">{m.title}</h3>
-          <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
-        </div>
-      </motion.div>
+      {/* bottom cell — card if this station sits below the rail */}
+      <div className="flex items-start justify-center pt-4 sm:pt-6">{!above && card}</div>
     </div>
   );
 }
@@ -197,23 +200,30 @@ function MilestonesPinned() {
 
   return (
     <section ref={sectionRef} style={{ height: vh ? distance + vh : undefined }} className="relative">
-      <div className="sticky top-0 flex h-screen items-center overflow-hidden">
+      <div className="sticky top-0 h-[100dvh] overflow-hidden">
         <Aurora className="opacity-50" />
-        <motion.div ref={trackRef} style={{ x }} className="flex items-stretch gap-4 px-[8vw] sm:gap-8">
-          <MilestoneIntro />
-          <div className="relative flex items-stretch">
-            {/* rail + scroll-driven fill */}
-            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
-            <motion.div
-              style={{ width: fillWidth }}
-              className="pointer-events-none absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_2px_var(--primary)]"
-            />
-            {MILESTONES.map((m, i) => (
-              <Station key={m.year} m={m} i={i} n={MILESTONES.length} progress={progress} />
-            ))}
-          </div>
-          <div aria-hidden className="w-[8vw] shrink-0" />
-        </motion.div>
+        {/* content area sits BELOW the floating header and above a base pad */}
+        <div className="flex h-full items-center pb-12 pt-24 sm:pt-28">
+          <motion.div
+            ref={trackRef}
+            style={{ x }}
+            className="flex h-full max-h-[620px] items-stretch gap-4 px-[8vw] sm:gap-8"
+          >
+            <MilestoneIntro />
+            <div className="relative flex h-full items-stretch">
+              {/* rail + scroll-driven fill, centred on the node row */}
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
+              <motion.div
+                style={{ width: fillWidth }}
+                className="pointer-events-none absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_2px_var(--primary)]"
+              />
+              {MILESTONES.map((m, i) => (
+                <Station key={m.year} m={m} i={i} n={MILESTONES.length} progress={progress} />
+              ))}
+            </div>
+            <div aria-hidden className="w-[8vw] shrink-0" />
+          </motion.div>
+        </div>
       </div>
     </section>
   );
@@ -398,10 +408,20 @@ export function About() {
               {[TEAM[0], TEAM[1]].map((m) => (
                 <span
                   key={m.name}
-                  className="flex h-11 w-11 items-center justify-center rounded-full text-sm font-bold text-white ring-2 ring-surface"
+                  className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white ring-2 ring-surface"
                   style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
                 >
                   {initials(m.name)}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={m.img}
+                    alt={m.name}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
                 </span>
               ))}
             </div>
@@ -450,20 +470,39 @@ export function About() {
           subtitle="A senior team from Linear, Notion, Stripe, and Figma — obsessed with the craft of great software."
         />
         <motion.div
-          variants={staggerContainer(0.06)}
+          variants={staggerContainer(0.08)}
           initial="hidden"
           whileInView="show"
           viewport={inView}
           className="mt-14 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-6"
         >
           {TEAM.map((m) => (
-            <motion.div key={m.name} variants={fadeUp} className="group text-center">
-              <span
-                className="mx-auto flex h-20 w-20 items-center justify-center rounded-2xl text-xl font-bold text-white shadow-lg transition-transform duration-300 group-hover:-translate-y-1 group-hover:scale-105"
-                style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
-              >
-                {initials(m.name)}
-              </span>
+            <motion.div
+              key={m.name}
+              variants={scaleUp}
+              whileHover={{ y: -8 }}
+              transition={{ type: "spring", stiffness: 300, damping: 20 }}
+              className="group text-center"
+            >
+              <div className="relative mx-auto aspect-square w-full max-w-[7rem] overflow-hidden rounded-2xl shadow-lg ring-1 ring-border">
+                <span
+                  className="absolute inset-0 flex items-center justify-center text-xl font-bold text-white"
+                  style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
+                >
+                  {initials(m.name)}
+                </span>
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={m.img}
+                  alt={m.name}
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
+                />
+                <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+              </div>
               <div className="mt-3 text-sm font-semibold text-foreground">{m.name}</div>
               <div className="text-xs text-muted">{m.role}</div>
             </motion.div>
