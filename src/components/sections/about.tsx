@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useScroll,
@@ -34,6 +34,7 @@ import { Button } from "@/components/ui/button";
 import { Magnetic } from "@/components/ui/magnetic";
 import { Aurora } from "@/components/ui/aurora";
 import { Marquee } from "@/components/ui/marquee";
+import { Scramble } from "@/components/ui/scramble";
 import { EASE, fadeUp, inView, scaleUp, staggerContainer } from "@/lib/motion";
 
 const BACKERS = ["Sequoia", "Accel", "Y Combinator", "Lightspeed", "First Round"];
@@ -89,7 +90,31 @@ function initials(name: string) {
   return name.split(" ").map((p) => p[0]).slice(0, 2).join("");
 }
 
-function MilestoneRow({
+/* ----- Milestones: horizontal scroll-pinned timeline (landing-grade) ----- */
+
+function MilestoneIntro() {
+  return (
+    <div className="flex h-full w-[84vw] shrink-0 flex-col justify-center sm:w-[30rem]">
+      <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-surface/60 px-3.5 py-1.5 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_2px_var(--accent)]" />
+        <Scramble text="Milestones" />
+      </span>
+      <h2 className="mt-5 font-display text-4xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-6xl">
+        How we{" "}
+        <span className="text-gradient-brand">got here</span>
+      </h2>
+      <p className="mt-5 max-w-sm text-lg text-muted">
+        From two frustrated builders to 12,000+ teams. Scroll sideways to travel through the story.
+      </p>
+      <div className="mt-8 flex items-center gap-2 text-sm text-muted">
+        <span>Scroll</span>
+        <ArrowRight className="h-4 w-4 animate-pulse text-accent" />
+      </div>
+    </div>
+  );
+}
+
+function Station({
   m,
   i,
   n,
@@ -100,81 +125,133 @@ function MilestoneRow({
   n: number;
   progress: MotionValue<number>;
 }) {
-  const reduce = useReducedMotion();
-  const t = (i + 0.5) / n;
-  const opacity = useTransform(progress, [t - 0.2, t - 0.05], [0, 1]);
-  const y = useTransform(progress, [t - 0.2, t - 0.05], [44, 0]);
-  const scale = useTransform(progress, [t - 0.2, t - 0.05], [0.95, 1]);
-  const blur = useTransform(progress, [t - 0.2, t - 0.05], [8, 0]);
-  const filter = useTransform(blur, (b) => `blur(${b}px)`);
-  const dotScale = useTransform(progress, [t - 0.1, t], [0.3, 1]);
-  const dotGlow = useTransform(progress, [t - 0.1, t, t + 0.25], [0, 1, 0.5]);
-  const side = i % 2 === 0;
+  const above = i % 2 === 0;
+  // Each station owns a slice of the scroll. Account for the intro panel
+  // occupying roughly the first slot, so stations map to [1/(n+1) .. 1].
+  const slot = (i + 1) / (n + 1);
+  const nodeScale = useTransform(progress, [slot - 0.1, slot], [0.3, 1]);
+  const glow = useTransform(progress, [slot - 0.1, slot, slot + 0.18], [0, 1, 0.55]);
+  const cardOpacity = useTransform(progress, [slot - 0.16, slot - 0.02], [0, 1]);
+  const cardY = useTransform(progress, [slot - 0.16, slot - 0.02], [above ? -36 : 36, 0]);
+  const yearOpacity = useTransform(progress, [slot - 0.12, slot], [0.15, 1]);
 
   return (
-    <motion.div
-      style={reduce ? undefined : { opacity, y, scale, filter }}
-      className={`relative pl-14 sm:w-1/2 sm:pl-0 ${
-        side ? "sm:pr-14 sm:text-right" : "sm:ml-auto sm:pl-14"
-      }`}
-    >
-      <motion.span
-        style={reduce ? undefined : { scale: dotScale }}
-        className={`absolute left-0.5 top-1 h-4 w-4 ${
-          side ? "sm:left-auto sm:right-0 sm:translate-x-1/2" : "sm:left-0 sm:-translate-x-1/2"
-        }`}
-      >
-        <motion.span
-          aria-hidden
-          style={reduce ? undefined : { opacity: dotGlow }}
-          className="absolute -inset-2 rounded-full bg-primary blur-md"
-        />
+    <div className="relative flex h-[62vh] max-h-[560px] w-[84vw] shrink-0 items-center justify-center sm:w-[26rem]">
+      {/* node on the rail */}
+      <motion.span style={{ scale: nodeScale }} className="absolute left-1/2 top-1/2 z-10 h-5 w-5 -translate-x-1/2 -translate-y-1/2">
+        <motion.span aria-hidden style={{ opacity: glow }} className="absolute -inset-2.5 rounded-full bg-primary blur-md" />
         <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
       </motion.span>
-      <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-        {m.year}
-      </span>
-      <h3 className="mt-2.5 font-display text-xl font-semibold text-foreground">{m.title}</h3>
-      <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
-    </motion.div>
+
+      {/* vertical stem from rail to card */}
+      <div
+        className={`absolute left-1/2 h-12 w-px -translate-x-1/2 bg-gradient-to-b from-primary/60 to-transparent ${
+          above ? "bottom-1/2 rotate-180" : "top-1/2"
+        }`}
+      />
+
+      {/* card */}
+      <motion.div
+        style={{ opacity: cardOpacity, y: cardY }}
+        className={`absolute left-1/2 w-[80%] max-w-xs -translate-x-1/2 ${
+          above ? "bottom-1/2 mb-14" : "top-1/2 mt-14"
+        }`}
+      >
+        <motion.div
+          style={{ opacity: yearOpacity }}
+          className="font-display text-6xl font-bold leading-none tracking-tight text-gradient-brand sm:text-7xl"
+        >
+          {m.year}
+        </motion.div>
+        <div className="mt-4 rounded-card border border-border bg-surface/80 p-5 shadow-xl shadow-black/5 backdrop-blur dark:shadow-black/30">
+          <h3 className="font-display text-xl font-semibold text-foreground">{m.title}</h3>
+          <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
+        </div>
+      </motion.div>
+    </div>
   );
 }
 
-function MilestonesTimeline() {
-  const ref = useRef<HTMLDivElement>(null);
-  const reduce = useReducedMotion();
-  const { scrollYProgress } = useScroll({
-    target: ref,
-    offset: ["start 0.8", "end 0.65"],
-  });
-  const progress = useSpring(scrollYProgress, { stiffness: 90, damping: 28, restDelta: 0.001 });
-  const cometTop = useTransform(progress, [0, 1], ["0%", "100%"]);
-  const cometOpacity = useTransform(progress, [0, 0.05, 0.95, 1], [0, 1, 1, 0]);
+function MilestonesPinned() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [distance, setDistance] = useState(0);
+  const [vh, setVh] = useState(0);
+
+  const { scrollYProgress } = useScroll({ target: sectionRef });
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 32, restDelta: 0.001 });
+  const x = useTransform(progress, [0, 1], [0, -distance]);
+  const fillWidth = useTransform(progress, [0, 1], ["0%", "100%"]);
+
+  useEffect(() => {
+    const measure = () => {
+      const track = trackRef.current;
+      if (!track) return;
+      setDistance(Math.max(0, track.scrollWidth - window.innerWidth + 32));
+      setVh(window.innerHeight);
+    };
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
 
   return (
-    <div ref={ref} className="relative mx-auto mt-14 max-w-2xl">
-      {/* track */}
-      <div className="absolute bottom-2 left-[9px] top-2 w-px bg-border sm:left-1/2 sm:-translate-x-1/2" />
-      {/* scroll-filled line */}
-      <motion.div
-        style={reduce ? undefined : { scaleY: progress }}
-        className="absolute bottom-2 left-[9px] top-2 w-px origin-top bg-gradient-to-b from-primary via-accent to-primary sm:left-1/2 sm:-translate-x-1/2"
-      />
-      {/* traveling comet on the leading edge */}
-      {!reduce && (
-        <motion.div
-          aria-hidden
-          style={{ top: cometTop, opacity: cometOpacity }}
-          className="absolute left-[9px] z-10 h-3.5 w-3.5 -translate-x-[6px] rounded-full bg-primary shadow-[0_0_24px_8px_var(--primary)] sm:left-1/2 sm:-translate-x-1/2"
-        />
-      )}
-      <div className="flex flex-col gap-16">
-        {MILESTONES.map((m, i) => (
-          <MilestoneRow key={m.year} m={m} i={i} n={MILESTONES.length} progress={progress} />
-        ))}
+    <section ref={sectionRef} style={{ height: vh ? distance + vh : undefined }} className="relative">
+      <div className="sticky top-0 flex h-screen items-center overflow-hidden">
+        <Aurora className="opacity-50" />
+        <motion.div ref={trackRef} style={{ x }} className="flex items-stretch gap-4 px-[8vw] sm:gap-8">
+          <MilestoneIntro />
+          <div className="relative flex items-stretch">
+            {/* rail + scroll-driven fill */}
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
+            <motion.div
+              style={{ width: fillWidth }}
+              className="pointer-events-none absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_2px_var(--primary)]"
+            />
+            {MILESTONES.map((m, i) => (
+              <Station key={m.year} m={m} i={i} n={MILESTONES.length} progress={progress} />
+            ))}
+          </div>
+          <div aria-hidden className="w-[8vw] shrink-0" />
+        </motion.div>
       </div>
-    </div>
+    </section>
   );
+}
+
+function MilestonesStatic() {
+  return (
+    <section className="relative overflow-hidden py-16 sm:py-24">
+      <Aurora className="opacity-50" />
+      <Container>
+        <SectionHeading eyebrow="Milestones" title="How we got here" />
+        <div className="mx-auto mt-12 max-w-2xl border-l border-border pl-8">
+          {MILESTONES.map((m) => (
+            <div key={m.year} className="relative pb-10 last:pb-0">
+              <span className="absolute -left-[2.6rem] top-1 h-4 w-4 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
+              <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+                {m.year}
+              </span>
+              <h3 className="mt-2.5 font-display text-xl font-semibold text-foreground">{m.title}</h3>
+              <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
+            </div>
+          ))}
+        </div>
+      </Container>
+    </section>
+  );
+}
+
+function Milestones() {
+  const reduce = useReducedMotion();
+  const [pinned, setPinned] = useState(false);
+
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setPinned(!reduce);
+  }, [reduce]);
+
+  return pinned ? <MilestonesPinned /> : <MilestonesStatic />;
 }
 
 export function About() {
@@ -336,14 +413,8 @@ export function About() {
         </motion.figure>
       </Container>
 
-      {/* Milestones timeline */}
-      <section className="relative overflow-hidden py-16 sm:py-24">
-        <Aurora className="opacity-60" />
-        <Container>
-          <SectionHeading eyebrow="Milestones" title="How we got here" />
-          <MilestonesTimeline />
-        </Container>
-      </section>
+      {/* Milestones — horizontal scroll-pinned timeline */}
+      <Milestones />
 
       {/* Values */}
       <Container className="py-16 sm:py-24">
