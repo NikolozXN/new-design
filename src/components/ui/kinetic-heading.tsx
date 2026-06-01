@@ -41,7 +41,7 @@ export function KineticHeading({
                       variants={charVariants}
                       className={cn(
                         "inline-block",
-                        word.accent && "text-gradient-brand"
+                        word.accent && "text-gradient-hero"
                       )}
                     >
                       {ch}

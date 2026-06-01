@@ -58,7 +58,7 @@ export function Contact() {
         title={
           <>
             Let&apos;s build your team&apos;s{" "}
-            <span className="text-gradient-brand">flow</span>
+            <span className="text-gradient-hero">flow</span>
           </>
         }
         subtitle="Questions about plans, security, or migrating your workspace? We'd love to help — usually within one business day."

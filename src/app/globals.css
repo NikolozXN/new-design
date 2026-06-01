@@ -122,6 +122,30 @@
     color: transparent;
   }
 
+  /* Hero headline accent — deep, saturated, high-contrast against the
+     violet canvas behind page heroes (fixes the "blends in" hierarchy issue). */
+  .text-gradient-hero {
+    background-image: linear-gradient(
+      105deg,
+      #6d28d9 0%,
+      #c026d3 48%,
+      #e11d48 100%
+    );
+    -webkit-background-clip: text;
+    background-clip: text;
+    color: transparent;
+    text-shadow: 0 1px 24px color-mix(in srgb, #c026d3 18%, transparent);
+  }
+  .dark .text-gradient-hero {
+    background-image: linear-gradient(
+      105deg,
+      #c4b5fd 0%,
+      #f0abfc 48%,
+      #fda4af 100%
+    );
+    text-shadow: 0 1px 28px color-mix(in srgb, #f0abfc 22%, transparent);
+  }
+
   /* Outline / stroked display type */
   .text-outline {
     color: transparent;

@@ -27,7 +27,6 @@ import {
 import { Container } from "@/components/ui/container";
 import { PageHero } from "@/components/ui/page-hero";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { IconTile } from "@/components/ui/icon-tile";
 import { Counter } from "@/components/ui/counter";
 import { Button } from "@/components/ui/button";
@@ -55,12 +54,12 @@ const MILESTONES = [
 ];
 
 const VALUES = [
-  { icon: Sparkles, title: "Craft over noise", body: "Every pixel and interaction earns its place. We sweat the details so your team feels calm, not cluttered." },
-  { icon: ShieldCheck, title: "Trust by default", body: "Security and privacy aren't add-ons. We build for the strictest teams from day one — SOC 2, SSO, the works." },
-  { icon: Zap, title: "Bias for momentum", body: "We ship small, ship often, and listen hard. Your feedback becomes product faster than anywhere you've worked." },
-  { icon: Users, title: "Teams first", body: "Software for humans who work together. We design for the messy reality of real teams, not idealized org charts." },
-  { icon: Globe, title: "Work in the open", body: "A public roadmap, a public changelog, and a community that shapes what we build next. No black boxes." },
-  { icon: Compass, title: "Long-term thinking", body: "We're independent and profitable by design — so we can make the right call, not the quarterly one." },
+  { icon: Sparkles, title: "Craft over noise", tint: "#7c3aed", body: "Every pixel and interaction earns its place. We sweat the details so your team feels calm, not cluttered." },
+  { icon: ShieldCheck, title: "Trust by default", tint: "#0ea5e9", body: "Security and privacy aren't add-ons. We build for the strictest teams from day one — SOC 2, SSO, the works." },
+  { icon: Zap, title: "Bias for momentum", tint: "#f59e0b", body: "We ship small, ship often, and listen hard. Your feedback becomes product faster than anywhere you've worked." },
+  { icon: Users, title: "Teams first", tint: "#ec4899", body: "Software for humans who work together. We design for the messy reality of real teams, not idealized org charts." },
+  { icon: Globe, title: "Work in the open", tint: "#10b981", body: "A public roadmap, a public changelog, and a community that shapes what we build next. No black boxes." },
+  { icon: Compass, title: "Long-term thinking", tint: "#6366f1", body: "We're independent and profitable by design — so we can make the right call, not the quarterly one." },
 ];
 
 const TEAM = [
@@ -88,6 +87,125 @@ const ROLES = [
 
 function initials(name: string) {
   return name.split(" ").map((p) => p[0]).slice(0, 2).join("");
+}
+
+/* Scroll reveal: rise + scale + de-blur (matches the timeline's feel). */
+const revealCard = {
+  hidden: { opacity: 0, y: 48, scale: 0.94, filter: "blur(12px)" },
+  show: {
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    filter: "blur(0px)",
+    transition: { duration: 0.7, ease: [0.16, 1, 0.3, 1] as const },
+  },
+};
+
+const hairline = {
+  hidden: { scaleX: 0 },
+  show: { scaleX: 1, transition: { duration: 0.9, ease: [0.16, 1, 0.3, 1] as const, delay: 0.15 } },
+};
+
+/* ----- Values: tinted cards that ignite on scroll ----- */
+function ValueCard({ v, i }: { v: (typeof VALUES)[number]; i: number }) {
+  return (
+    <motion.div variants={revealCard} className="group relative h-full">
+      <div className="relative h-full overflow-hidden rounded-card border border-border bg-surface p-6 transition-all duration-300 hover:-translate-y-1.5">
+        {/* coloured glow on hover */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -inset-px rounded-card opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          style={{ boxShadow: `inset 0 0 0 1px ${v.tint}66, 0 26px 60px -22px ${v.tint}99` }}
+        />
+        {/* radial wash that blooms from the icon */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute -left-10 -top-10 h-32 w-32 rounded-full opacity-0 blur-2xl transition-opacity duration-500 group-hover:opacity-100"
+          style={{ background: v.tint }}
+        />
+        {/* top hairline that draws in on scroll */}
+        <motion.span
+          aria-hidden
+          variants={hairline}
+          className="absolute inset-x-0 top-0 h-[3px] origin-left"
+          style={{ background: `linear-gradient(90deg, ${v.tint}, transparent 85%)` }}
+        />
+        {/* ghost index */}
+        <span className="pointer-events-none absolute right-4 top-2 font-display text-6xl font-bold leading-none text-foreground/[0.04] transition-colors duration-300 group-hover:text-foreground/[0.07]">
+          {String(i + 1).padStart(2, "0")}
+        </span>
+
+        <div className="relative">
+          <motion.span
+            whileHover={{ rotate: -8, scale: 1.1 }}
+            transition={{ type: "spring", stiffness: 320, damping: 14 }}
+            className="grid h-12 w-12 place-items-center rounded-xl text-white shadow-lg"
+            style={{
+              backgroundImage: `linear-gradient(135deg, ${v.tint}, color-mix(in srgb, ${v.tint} 55%, #000))`,
+              boxShadow: `0 10px 24px -10px ${v.tint}`,
+            }}
+          >
+            <v.icon className="h-5 w-5" />
+          </motion.span>
+          <h3 className="mt-5 font-display text-lg font-semibold text-foreground">{v.title}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted">{v.body}</p>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+/* ----- Team: scroll-linked reveal + image parallax + cinematic hover ----- */
+function TeamCard({ m }: { m: (typeof TEAM)[number] }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start end", "end start"],
+  });
+  const imgY = useTransform(scrollYProgress, [0, 1], ["-10%", "10%"]);
+
+  return (
+    <motion.div ref={ref} variants={revealCard} className="group text-center">
+      <motion.div
+        whileHover={{ y: -10, scale: 1.03 }}
+        transition={{ type: "spring", stiffness: 280, damping: 20 }}
+        className="relative mx-auto aspect-square w-full max-w-[7.5rem] overflow-hidden rounded-2xl shadow-lg ring-1 ring-border"
+      >
+        {/* gradient ring that lights up on hover */}
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 z-20 rounded-2xl opacity-0 ring-2 ring-inset transition-opacity duration-300 group-hover:opacity-100"
+          style={{ color: m.to, boxShadow: `inset 0 0 0 2px ${m.to}` }}
+        />
+        <span
+          className="absolute inset-0 z-0 flex items-center justify-center text-xl font-bold text-white"
+          style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
+        >
+          {initials(m.name)}
+        </span>
+        {/* parallax + zoom on the headshot */}
+        <motion.div style={{ y: imgY, scale: 1.18 }} className="absolute inset-0 z-10">
+          {/* eslint-disable-next-line @next/next/no-img-element */}
+          <img
+            src={m.img}
+            alt={m.name}
+            loading="lazy"
+            onError={(e) => {
+              e.currentTarget.style.display = "none";
+            }}
+            className="h-full w-full object-cover"
+          />
+        </motion.div>
+        {/* caption sheen */}
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 z-10 h-2/3 bg-gradient-to-t from-black/55 via-black/10 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
+        <span className="pointer-events-none absolute inset-x-0 bottom-2 z-20 translate-y-2 px-2 text-[11px] font-medium text-white/90 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+          {m.role}
+        </span>
+      </motion.div>
+      <div className="mt-3 text-sm font-semibold text-foreground">{m.name}</div>
+      <div className="text-xs text-muted">{m.role}</div>
+    </motion.div>
+  );
 }
 
 /* ----- Milestones: horizontal scroll-pinned timeline (landing-grade) ----- */
@@ -272,7 +390,7 @@ export function About() {
         title={
           <>
             The calm operating system{" "}
-            <span className="text-gradient-brand">for modern teams</span>
+            <span className="text-gradient-hero">for modern teams</span>
           </>
         }
         subtitle="Flowly started with a simple frustration: great teams were drowning in tools that created more work than they removed. So we built the one we always wanted."
@@ -440,24 +558,14 @@ export function About() {
       <Container className="py-16 sm:py-24">
         <SectionHeading eyebrow="Our values" title="What we care about" />
         <motion.div
-          variants={staggerContainer(0.08)}
+          variants={staggerContainer(0.1)}
           initial="hidden"
           whileInView="show"
           viewport={inView}
           className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
         >
-          {VALUES.map((v) => (
-            <motion.div key={v.title} variants={fadeUp} whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300, damping: 22 }}>
-              <SpotlightCard className="group h-full">
-                <div className="p-6">
-                  <IconTile icon={v.icon} />
-                  <h3 className="mt-5 font-display text-lg font-semibold text-foreground">
-                    {v.title}
-                  </h3>
-                  <p className="mt-2 text-sm leading-relaxed text-muted">{v.body}</p>
-                </div>
-              </SpotlightCard>
-            </motion.div>
+          {VALUES.map((v, i) => (
+            <ValueCard key={v.title} v={v} i={i} />
           ))}
         </motion.div>
       </Container>
@@ -470,42 +578,14 @@ export function About() {
           subtitle="A senior team from Linear, Notion, Stripe, and Figma — obsessed with the craft of great software."
         />
         <motion.div
-          variants={staggerContainer(0.08)}
+          variants={staggerContainer(0.09)}
           initial="hidden"
           whileInView="show"
           viewport={inView}
           className="mt-14 grid grid-cols-2 gap-5 sm:grid-cols-3 lg:grid-cols-6"
         >
           {TEAM.map((m) => (
-            <motion.div
-              key={m.name}
-              variants={scaleUp}
-              whileHover={{ y: -8 }}
-              transition={{ type: "spring", stiffness: 300, damping: 20 }}
-              className="group text-center"
-            >
-              <div className="relative mx-auto aspect-square w-full max-w-[7rem] overflow-hidden rounded-2xl shadow-lg ring-1 ring-border">
-                <span
-                  className="absolute inset-0 flex items-center justify-center text-xl font-bold text-white"
-                  style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
-                >
-                  {initials(m.name)}
-                </span>
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={m.img}
-                  alt={m.name}
-                  loading="lazy"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                  className="absolute inset-0 h-full w-full object-cover transition-transform duration-500 group-hover:scale-110"
-                />
-                <span className="absolute inset-x-0 bottom-0 h-1/2 bg-gradient-to-t from-black/40 to-transparent opacity-0 transition-opacity duration-300 group-hover:opacity-100" />
-              </div>
-              <div className="mt-3 text-sm font-semibold text-foreground">{m.name}</div>
-              <div className="text-xs text-muted">{m.role}</div>
-            </motion.div>
+            <TeamCard key={m.name} m={m} />
           ))}
         </motion.div>
       </Container>
