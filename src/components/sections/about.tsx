@@ -1,6 +1,14 @@
 "use client";
 
-import { motion } from "framer-motion";
+import { useRef } from "react";
+import {
+  motion,
+  useScroll,
+  useSpring,
+  useTransform,
+  useReducedMotion,
+  type MotionValue,
+} from "framer-motion";
 import {
   Sparkles,
   ShieldCheck,
@@ -79,6 +87,94 @@ const ROLES = [
 
 function initials(name: string) {
   return name.split(" ").map((p) => p[0]).slice(0, 2).join("");
+}
+
+function MilestoneRow({
+  m,
+  i,
+  n,
+  progress,
+}: {
+  m: (typeof MILESTONES)[number];
+  i: number;
+  n: number;
+  progress: MotionValue<number>;
+}) {
+  const reduce = useReducedMotion();
+  const t = (i + 0.5) / n;
+  const opacity = useTransform(progress, [t - 0.2, t - 0.05], [0, 1]);
+  const y = useTransform(progress, [t - 0.2, t - 0.05], [44, 0]);
+  const scale = useTransform(progress, [t - 0.2, t - 0.05], [0.95, 1]);
+  const blur = useTransform(progress, [t - 0.2, t - 0.05], [8, 0]);
+  const filter = useTransform(blur, (b) => `blur(${b}px)`);
+  const dotScale = useTransform(progress, [t - 0.1, t], [0.3, 1]);
+  const dotGlow = useTransform(progress, [t - 0.1, t, t + 0.25], [0, 1, 0.5]);
+  const side = i % 2 === 0;
+
+  return (
+    <motion.div
+      style={reduce ? undefined : { opacity, y, scale, filter }}
+      className={`relative pl-14 sm:w-1/2 sm:pl-0 ${
+        side ? "sm:pr-14 sm:text-right" : "sm:ml-auto sm:pl-14"
+      }`}
+    >
+      <motion.span
+        style={reduce ? undefined : { scale: dotScale }}
+        className={`absolute left-0.5 top-1 h-4 w-4 ${
+          side ? "sm:left-auto sm:right-0 sm:translate-x-1/2" : "sm:left-0 sm:-translate-x-1/2"
+        }`}
+      >
+        <motion.span
+          aria-hidden
+          style={reduce ? undefined : { opacity: dotGlow }}
+          className="absolute -inset-2 rounded-full bg-primary blur-md"
+        />
+        <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
+      </motion.span>
+      <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
+        {m.year}
+      </span>
+      <h3 className="mt-2.5 font-display text-xl font-semibold text-foreground">{m.title}</h3>
+      <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
+    </motion.div>
+  );
+}
+
+function MilestonesTimeline() {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start 0.8", "end 0.65"],
+  });
+  const progress = useSpring(scrollYProgress, { stiffness: 90, damping: 28, restDelta: 0.001 });
+  const cometTop = useTransform(progress, [0, 1], ["0%", "100%"]);
+  const cometOpacity = useTransform(progress, [0, 0.05, 0.95, 1], [0, 1, 1, 0]);
+
+  return (
+    <div ref={ref} className="relative mx-auto mt-14 max-w-2xl">
+      {/* track */}
+      <div className="absolute bottom-2 left-[9px] top-2 w-px bg-border sm:left-1/2 sm:-translate-x-1/2" />
+      {/* scroll-filled line */}
+      <motion.div
+        style={reduce ? undefined : { scaleY: progress }}
+        className="absolute bottom-2 left-[9px] top-2 w-px origin-top bg-gradient-to-b from-primary via-accent to-primary sm:left-1/2 sm:-translate-x-1/2"
+      />
+      {/* traveling comet on the leading edge */}
+      {!reduce && (
+        <motion.div
+          aria-hidden
+          style={{ top: cometTop, opacity: cometOpacity }}
+          className="absolute left-[9px] z-10 h-3.5 w-3.5 -translate-x-[6px] rounded-full bg-primary shadow-[0_0_24px_8px_var(--primary)] sm:left-1/2 sm:-translate-x-1/2"
+        />
+      )}
+      <div className="flex flex-col gap-16">
+        {MILESTONES.map((m, i) => (
+          <MilestoneRow key={m.year} m={m} i={i} n={MILESTONES.length} progress={progress} />
+        ))}
+      </div>
+    </div>
+  );
 }
 
 export function About() {
@@ -245,50 +341,7 @@ export function About() {
         <Aurora className="opacity-60" />
         <Container>
           <SectionHeading eyebrow="Milestones" title="How we got here" />
-          <div className="relative mx-auto mt-14 max-w-2xl">
-            {/* vertical line — draws in on scroll */}
-            <motion.div
-              initial={{ scaleY: 0 }}
-              whileInView={{ scaleY: 1 }}
-              viewport={{ once: true, margin: "-80px" }}
-              transition={{ duration: 1.2, ease: EASE }}
-              style={{ originY: 0 }}
-              className="absolute bottom-2 left-[9px] top-2 w-px bg-gradient-to-b from-primary via-accent to-transparent sm:left-1/2 sm:-translate-x-1/2"
-            />
-            <div className="flex flex-col gap-12">
-              {MILESTONES.map((m, i) => (
-                <motion.div
-                  key={m.year}
-                  initial={{ opacity: 0, y: 28, filter: "blur(6px)" }}
-                  whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-                  viewport={inView}
-                  transition={{ duration: 0.6, ease: EASE }}
-                  className={`relative pl-14 sm:w-1/2 sm:pl-0 ${
-                    i % 2 === 0 ? "sm:pr-14 sm:text-right" : "sm:ml-auto sm:pl-14"
-                  }`}
-                >
-                  <motion.span
-                    initial={{ scale: 0, opacity: 0 }}
-                    whileInView={{ scale: 1, opacity: 1 }}
-                    viewport={{ once: true }}
-                    transition={{ type: "spring", stiffness: 480, damping: 16, delay: 0.12 }}
-                    className={`absolute left-0.5 top-1 h-4 w-4 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent shadow-[0_0_10px_1px_var(--primary)] ${
-                      i % 2 === 0
-                        ? "sm:left-auto sm:right-0 sm:translate-x-1/2"
-                        : "sm:left-0 sm:-translate-x-1/2"
-                    }`}
-                  />
-                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
-                    {m.year}
-                  </span>
-                  <h3 className="mt-2.5 font-display text-xl font-semibold text-foreground">
-                    {m.title}
-                  </h3>
-                  <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
-                </motion.div>
-              ))}
-            </div>
-          </div>
+          <MilestonesTimeline />
         </Container>
       </section>
 
