@@ -25,7 +25,8 @@ import { Counter } from "@/components/ui/counter";
 import { Button } from "@/components/ui/button";
 import { Magnetic } from "@/components/ui/magnetic";
 import { Aurora } from "@/components/ui/aurora";
-import { fadeUp, inView, staggerContainer } from "@/lib/motion";
+import { Marquee } from "@/components/ui/marquee";
+import { EASE, fadeUp, inView, scaleUp, staggerContainer } from "@/lib/motion";
 
 const BACKERS = ["Sequoia", "Accel", "Y Combinator", "Lightspeed", "First Round"];
 
@@ -118,13 +119,16 @@ export function About() {
           <span className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
             Backed by the best
           </span>
-          <div className="flex flex-wrap items-center justify-center gap-x-10 gap-y-4">
+          <Marquee className="w-full">
             {BACKERS.map((b) => (
-              <span key={b} className="font-display text-lg font-bold tracking-tight text-foreground/35 transition-colors hover:text-foreground/70">
+              <span
+                key={b}
+                className="px-8 font-display text-lg font-bold tracking-tight text-foreground/35 transition-colors hover:text-foreground/70"
+              >
                 {b}
               </span>
             ))}
-          </div>
+          </Marquee>
         </motion.div>
       </Container>
 
@@ -138,7 +142,7 @@ export function About() {
           className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border sm:grid-cols-4"
         >
           {STATS.map((s) => (
-            <motion.div key={s.label} variants={fadeUp} className="bg-surface p-6 text-center sm:p-8">
+            <motion.div key={s.label} variants={scaleUp} className="bg-surface p-6 text-center sm:p-8 transition-colors hover:bg-surface-2/50">
               <div className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
                 {s.plain ? s.plain : <Counter value={s.value} suffix={s.suffix} />}
               </div>
@@ -196,8 +200,22 @@ export function About() {
           transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
           className="relative mx-auto max-w-3xl overflow-hidden rounded-card border border-border bg-surface p-8 text-center shadow-xl shadow-black/5 sm:p-12 dark:shadow-black/30"
         >
-          <div className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl" />
-          <Quote className="mx-auto h-8 w-8 text-primary/70" />
+          <motion.div
+            aria-hidden
+            initial={{ opacity: 0.3, scale: 0.9 }}
+            whileInView={{ opacity: 0.6, scale: 1 }}
+            viewport={{ once: true }}
+            transition={{ duration: 1.4, ease: EASE }}
+            className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
+          />
+          <motion.div
+            initial={{ scale: 0, rotate: -20, opacity: 0 }}
+            whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
+            viewport={{ once: true }}
+            transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.15 }}
+          >
+            <Quote className="mx-auto h-8 w-8 text-primary/70" />
+          </motion.div>
           <blockquote className="mt-5 text-balance font-display text-xl font-semibold leading-snug tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
             “We&apos;re not building another tool to add to the pile. We&apos;re building the one
             that makes the pile disappear.”
@@ -228,29 +246,42 @@ export function About() {
         <Container>
           <SectionHeading eyebrow="Milestones" title="How we got here" />
           <div className="relative mx-auto mt-14 max-w-2xl">
-            {/* vertical line */}
-            <div className="absolute left-[7px] top-2 bottom-2 w-px bg-gradient-to-b from-primary via-accent to-transparent sm:left-1/2" />
-            <div className="flex flex-col gap-10">
+            {/* vertical line — draws in on scroll */}
+            <motion.div
+              initial={{ scaleY: 0 }}
+              whileInView={{ scaleY: 1 }}
+              viewport={{ once: true, margin: "-80px" }}
+              transition={{ duration: 1.2, ease: EASE }}
+              style={{ originY: 0 }}
+              className="absolute bottom-2 left-[9px] top-2 w-px bg-gradient-to-b from-primary via-accent to-transparent sm:left-1/2 sm:-translate-x-1/2"
+            />
+            <div className="flex flex-col gap-12">
               {MILESTONES.map((m, i) => (
                 <motion.div
                   key={m.year}
-                  initial={{ opacity: 0, y: 24 }}
-                  whileInView={{ opacity: 1, y: 0 }}
+                  initial={{ opacity: 0, y: 28, filter: "blur(6px)" }}
+                  whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
                   viewport={inView}
-                  transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
-                  className={`relative pl-10 sm:w-1/2 sm:pl-0 ${
-                    i % 2 === 0 ? "sm:pr-12 sm:text-right" : "sm:ml-auto sm:pl-12"
+                  transition={{ duration: 0.6, ease: EASE }}
+                  className={`relative pl-14 sm:w-1/2 sm:pl-0 ${
+                    i % 2 === 0 ? "sm:pr-14 sm:text-right" : "sm:ml-auto sm:pl-14"
                   }`}
                 >
-                  <span
-                    className={`absolute left-0 top-1.5 h-4 w-4 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent shadow-[0_0_12px_2px_var(--primary)] sm:left-auto ${
-                      i % 2 === 0 ? "sm:-right-2" : "sm:-left-2"
+                  <motion.span
+                    initial={{ scale: 0, opacity: 0 }}
+                    whileInView={{ scale: 1, opacity: 1 }}
+                    viewport={{ once: true }}
+                    transition={{ type: "spring", stiffness: 480, damping: 16, delay: 0.12 }}
+                    className={`absolute left-0.5 top-1 h-4 w-4 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent shadow-[0_0_10px_1px_var(--primary)] ${
+                      i % 2 === 0
+                        ? "sm:left-auto sm:right-0 sm:translate-x-1/2"
+                        : "sm:left-0 sm:-translate-x-1/2"
                     }`}
                   />
-                  <div className="font-mono text-xs font-semibold uppercase tracking-[0.18em] text-primary">
+                  <span className="inline-flex items-center rounded-full bg-primary/10 px-2.5 py-0.5 font-mono text-[11px] font-semibold uppercase tracking-[0.14em] text-primary">
                     {m.year}
-                  </div>
-                  <h3 className="mt-1.5 font-display text-xl font-semibold text-foreground">
+                  </span>
+                  <h3 className="mt-2.5 font-display text-xl font-semibold text-foreground">
                     {m.title}
                   </h3>
                   <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
@@ -272,7 +303,7 @@ export function About() {
           className="mt-14 grid gap-5 sm:grid-cols-2 lg:grid-cols-3"
         >
           {VALUES.map((v) => (
-            <motion.div key={v.title} variants={fadeUp}>
+            <motion.div key={v.title} variants={fadeUp} whileHover={{ y: -5 }} transition={{ type: "spring", stiffness: 300, damping: 22 }}>
               <SpotlightCard className="group h-full">
                 <div className="p-6">
                   <IconTile icon={v.icon} />
