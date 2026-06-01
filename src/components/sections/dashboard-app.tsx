@@ -1,22 +1,13 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   LayoutGrid,
-  Inbox,
-  CalendarDays,
-  BarChart3,
-  Settings,
   Search,
   Plus,
-  Bell,
-  ChevronDown,
   ChevronLeft,
   ChevronRight,
-  Sparkles,
-  ArrowUpRight,
   CheckCircle2,
   Circle,
   Filter,
@@ -25,8 +16,8 @@ import {
   Trash2,
   X,
 } from "lucide-react";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { cn } from "@/lib/utils";
+import { DashboardShell } from "@/components/dashboard/shell";
 
 /* ----------------------------- data ----------------------------- */
 
@@ -611,147 +602,31 @@ export function DashboardApp() {
   ];
 
   return (
-    <div className="flex min-h-screen bg-background">
-      {/* Sidebar */}
-      <aside className="sticky top-0 hidden h-screen w-64 shrink-0 flex-col border-r border-border bg-surface-2 p-3 lg:flex">
-        <Link href="/" className="mb-4 flex items-center gap-2 rounded-lg border border-border bg-background px-2.5 py-2">
-          <span className="flex h-6 w-6 items-center justify-center rounded-md bg-gradient-to-br from-primary to-accent text-[11px] font-bold text-white">
-            A
-          </span>
-          <span className="text-sm font-semibold text-foreground">Acme Inc</span>
-          <ChevronDown className="ml-auto h-3.5 w-3.5 text-muted" />
-        </Link>
-
-        <nav className="flex flex-col gap-0.5">
-          {[
-            { icon: LayoutGrid, label: "Boards", active: true },
-            { icon: Inbox, label: "Inbox", badge: "3" },
-            { icon: CalendarDays, label: "Timeline" },
-            { icon: BarChart3, label: "Reports" },
-            { icon: Settings, label: "Settings" },
-          ].map(({ icon: Icon, label, active, badge }) => (
-            <button
-              key={label}
-              type="button"
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px]",
-                active ? "bg-primary/10 font-semibold text-primary" : "text-muted hover:text-foreground"
-              )}
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-              {badge && (
-                <span className="ml-auto rounded-full bg-primary px-1.5 py-0.5 text-[9px] font-bold text-white">{badge}</span>
-              )}
-            </button>
-          ))}
-        </nav>
-
-        <div className="mt-5 px-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted">Projects</div>
-        <div className="mt-1.5 flex flex-col gap-0.5">
-          {[
-            { name: "Website Revamp", color: "bg-violet-500", active: true },
-            { name: "Mobile App", color: "bg-emerald-500" },
-            { name: "Q3 Marketing", color: "bg-amber-500" },
-          ].map((p) => (
-            <button
-              key={p.name}
-              type="button"
-              className={cn(
-                "flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-left text-[13px]",
-                p.active ? "font-medium text-foreground" : "text-muted hover:text-foreground"
-              )}
-            >
-              <span className={cn("h-2 w-2 rounded-full", p.color)} />
-              {p.name}
-            </button>
-          ))}
-        </div>
-
-        {/* Site pages — wired to the real routes in this template */}
-        <div className="mt-5 px-2.5 text-[10px] font-semibold uppercase tracking-wider text-muted">Pages</div>
-        <div className="mt-1.5 flex flex-col gap-0.5">
-          {[
-            { label: "Landing page", href: "/" },
-            { label: "Pricing", href: "/pricing" },
-            { label: "About", href: "/about" },
-            { label: "Contact", href: "/contact" },
-            { label: "Sign in", href: "/login" },
-          ].map((p) => (
-            <Link
-              key={p.href}
-              href={p.href}
-              className="group flex items-center gap-2.5 rounded-lg px-2.5 py-1.5 text-[13px] text-muted transition-colors hover:bg-surface hover:text-foreground"
-            >
-              {p.label}
-              <ArrowUpRight className="ml-auto h-3.5 w-3.5 opacity-0 transition-opacity group-hover:opacity-100" />
-            </Link>
-          ))}
-        </div>
-
-        <div className="mt-6 rounded-xl border border-border bg-gradient-to-br from-primary/10 to-accent/10 p-3">
-          <div className="flex items-center gap-1.5 text-[12px] font-semibold text-foreground">
-            <Sparkles className="h-3.5 w-3.5 text-primary" /> Flowly AI
+    <DashboardShell
+      breadcrumb="Projects / Website Revamp"
+      title="Sprint 14 · Board"
+      status="On track"
+      right={
+        <>
+          <div className="hidden items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs lg:flex">
+            <Search className="h-3.5 w-3.5 text-muted" />
+            <input
+              value={query}
+              onChange={(e) => setQuery(e.target.value)}
+              placeholder="Search tasks"
+              className="w-28 bg-transparent text-foreground placeholder:text-muted outline-none"
+            />
           </div>
-          <p className="mt-1 text-[11px] leading-snug text-muted">Summarize this sprint and flag at-risk tasks.</p>
           <button
             type="button"
             onClick={() => openModal("backlog")}
-            className="mt-2 inline-flex items-center gap-1 text-[11px] font-semibold text-primary"
+            className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-b from-primary to-primary-hover px-2.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/30 sm:px-3"
           >
-            Try it <ArrowUpRight className="h-3 w-3" />
+            <Plus className="h-3.5 w-3.5" /> New
           </button>
-        </div>
-      </aside>
-
-      {/* Main */}
-      <div className="flex min-w-0 flex-1 flex-col">
-        {/* Top bar */}
-        <header className="sticky top-0 z-20 flex items-center gap-2 border-b border-border bg-background/80 px-4 py-3 backdrop-blur sm:gap-3 sm:px-6">
-          <div className="min-w-0 flex-1">
-            <div className="truncate text-[11px] text-muted">Projects / Website Revamp</div>
-            <div className="flex items-center gap-2 text-sm font-semibold text-foreground">
-              <span className="truncate">Sprint 14 · Board</span>
-              <span className="hidden shrink-0 rounded-full bg-emerald-500/15 px-1.5 py-0.5 text-[10px] font-semibold text-emerald-600 dark:text-emerald-300 sm:inline">
-                On track
-              </span>
-            </div>
-          </div>
-
-          <div className="flex shrink-0 items-center gap-2">
-            <div className="hidden items-center gap-2 rounded-lg border border-border bg-surface px-2.5 py-1.5 text-xs lg:flex">
-              <Search className="h-3.5 w-3.5 text-muted" />
-              <input
-                value={query}
-                onChange={(e) => setQuery(e.target.value)}
-                placeholder="Search tasks"
-                className="w-28 bg-transparent text-foreground placeholder:text-muted outline-none"
-              />
-            </div>
-
-            <div className="hidden -space-x-1.5 md:flex">
-              <Avatar who="SC" />
-              <Avatar who="ML" />
-              <Avatar who="ER" />
-              <span className="inline-flex h-6 w-6 items-center justify-center rounded-full bg-surface-2 text-[10px] font-semibold text-muted ring-2 ring-surface">
-                +5
-              </span>
-            </div>
-
-            <button className="hidden text-muted transition-colors hover:text-foreground sm:block" aria-label="Notifications">
-              <Bell className="h-4 w-4" />
-            </button>
-            <ThemeToggle />
-            <button
-              type="button"
-              onClick={() => openModal("backlog")}
-              className="inline-flex items-center gap-1 rounded-lg bg-gradient-to-b from-primary to-primary-hover px-2.5 py-1.5 text-xs font-semibold text-primary-foreground shadow-sm shadow-primary/30 sm:px-3"
-            >
-              <Plus className="h-3.5 w-3.5" /> New
-            </button>
-          </div>
-        </header>
-
+        </>
+      }
+    >
         {/* Content */}
         <div className="flex flex-1 gap-6 p-4 sm:p-6">
           <div className="min-w-0 flex-1">
@@ -857,9 +732,8 @@ export function DashboardApp() {
             </div>
           </aside>
         </div>
-      </div>
 
       <NewTaskModal open={modalOpen} defaultStatus={modalStatus} onClose={() => setModalOpen(false)} onCreate={createTask} />
-    </div>
+    </DashboardShell>
   );
 }
