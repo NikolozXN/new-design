@@ -112,19 +112,26 @@ function initials(name: string) {
 }
 
 /* ---------------------------------------------------------------------------
-   Values — desktop: list + detail panel. Mobile: tap accordion.
+   Values — desktop: scroll-scrubbed sticky list + crossfading detail panel.
+   Mobile: tap accordion with scroll reveals.
 --------------------------------------------------------------------------- */
 
-function ValuesDetailPanel({ v, index }: { v: (typeof VALUES)[number]; index: number }) {
+function ValuesPanelContent({
+  v,
+  index,
+  className,
+}: {
+  v: (typeof VALUES)[number];
+  index: number;
+  className?: string;
+}) {
   const Icon = v.icon;
   return (
-    <motion.div
-      key={v.title}
-      initial={{ opacity: 0, y: 16 }}
-      animate={{ opacity: 1, y: 0 }}
-      exit={{ opacity: 0, y: -12 }}
-      transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
-      className="relative flex h-full min-h-[22rem] flex-col overflow-hidden rounded-card border border-border bg-surface p-8 shadow-xl sm:p-10"
+    <div
+      className={cn(
+        "relative flex h-full min-h-[22rem] flex-col overflow-hidden rounded-card border border-border bg-surface p-8 shadow-xl sm:p-10",
+        className
+      )}
       style={{ boxShadow: `0 32px 64px -32px ${v.tint}55` }}
     >
       <span
@@ -148,68 +155,202 @@ function ValuesDetailPanel({ v, index }: { v: (typeof VALUES)[number]; index: nu
         {v.title}
       </h3>
       <p className="relative mt-4 max-w-lg text-lg leading-relaxed text-muted">{v.body}</p>
+    </div>
+  );
+}
+
+function ValuesScrollPanel({
+  v,
+  index,
+  n,
+  progress,
+}: {
+  v: (typeof VALUES)[number];
+  index: number;
+  n: number;
+  progress: MotionValue<number>;
+}) {
+  const segment = 1 / n;
+  const enter = index * segment;
+  const exit = (index + 1) * segment;
+  const pad = segment * 0.22;
+
+  const opacity = useTransform(
+    progress,
+    [Math.max(0, enter - pad), enter + pad * 0.5, exit - pad * 0.5, Math.min(1, exit + pad)],
+    [0, 1, 1, 0]
+  );
+  const y = useTransform(progress, [enter, enter + segment * 0.5, exit], [56, 0, -40]);
+  const scale = useTransform(progress, [enter, enter + segment * 0.5, exit], [0.93, 1, 0.97]);
+
+  return (
+    <motion.div
+      style={{ opacity, y, scale }}
+      className="absolute inset-0 will-change-transform"
+      aria-hidden={index !== 0}
+    >
+      <ValuesPanelContent v={v} index={index} />
     </motion.div>
   );
 }
 
-function ValuesShowcaseDesktop() {
+/** Hover/click fallback when reduced motion is on. */
+function ValuesShowcaseDesktopStatic() {
   const [active, setActive] = useState(0);
 
   return (
-    <StaggerReveal stagger={0.06} className="mt-14 grid items-stretch gap-8 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-10">
+    <div className="mt-14 grid items-stretch gap-8 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-10">
       <div className="flex flex-col gap-1.5">
         {VALUES.map((v, i) => {
           const isActive = i === active;
           const Icon = v.icon;
           return (
-            <motion.button
+            <button
               key={v.title}
               type="button"
-              variants={revealIn}
-              custom={i}
               aria-current={isActive ? "true" : undefined}
               onMouseEnter={() => setActive(i)}
               onFocus={() => setActive(i)}
               onClick={() => setActive(i)}
               className={cn(
-                "relative flex items-center gap-3.5 rounded-xl border px-4 py-3.5 text-left outline-none transition-colors duration-300 focus-visible:ring-2 focus-visible:ring-primary",
+                "relative flex items-center gap-3.5 rounded-xl border px-4 py-3.5 text-left outline-none focus-visible:ring-2 focus-visible:ring-primary",
                 isActive
                   ? "border-primary/25 bg-surface shadow-md"
-                  : "border-transparent bg-transparent hover:bg-surface-2/70"
+                  : "border-transparent hover:bg-surface-2/70"
               )}
             >
-              {isActive && (
-                <motion.span
-                  layoutId="values-active"
-                  className="absolute inset-0 rounded-xl border border-primary/20 bg-surface shadow-md"
-                  transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                />
-              )}
               <span
-                className="relative grid h-10 w-10 shrink-0 place-items-center rounded-lg text-white"
+                className="grid h-10 w-10 shrink-0 place-items-center rounded-lg text-white"
                 style={{
                   backgroundImage: `linear-gradient(135deg, ${v.tint}, color-mix(in srgb, ${v.tint} 55%, #000))`,
                 }}
               >
                 <Icon className="h-4 w-4" />
               </span>
-              <span className="relative min-w-0 flex-1 font-display text-sm font-semibold tracking-tight text-foreground">
+              <span className="min-w-0 flex-1 font-display text-sm font-semibold tracking-tight text-foreground">
                 {v.title}
               </span>
-              <span className="relative font-mono text-[11px] font-semibold text-muted/70">
+              <span className="font-mono text-[11px] font-semibold text-muted/70">
                 {String(i + 1).padStart(2, "0")}
               </span>
-            </motion.button>
+            </button>
           );
         })}
       </div>
+      <ValuesPanelContent v={VALUES[active]} index={active} />
+    </div>
+  );
+}
 
-      <div className="relative min-h-[22rem]">
-        <AnimatePresence mode="wait">
-          <ValuesDetailPanel key={active} v={VALUES[active]} index={active} />
-        </AnimatePresence>
+function ValuesShowcaseDesktop() {
+  const reduce = useReducedMotion();
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const [active, setActive] = useState(0);
+  const [vh, setVh] = useState(0);
+
+  const { scrollYProgress } = useScroll({
+    target: sectionRef,
+    offset: ["start 0.2", "end 0.8"],
+  });
+  const progress = useSpring(scrollYProgress, {
+    stiffness: 110,
+    damping: 28,
+    restDelta: 0.001,
+  });
+
+  useEffect(() => {
+    const update = (v: number) => {
+      setActive(Math.min(VALUES.length - 1, Math.max(0, Math.floor(v * VALUES.length))));
+    };
+    update(progress.get());
+    const unsub = progress.on("change", update);
+    return unsub;
+  }, [progress]);
+
+  useIsoLayoutEffect(() => {
+    const measure = () => setVh(window.innerHeight);
+    measure();
+    window.addEventListener("resize", measure);
+    return () => window.removeEventListener("resize", measure);
+  }, []);
+
+  if (reduce) return <ValuesShowcaseDesktopStatic />;
+
+  const scrollPerValue = 0.42;
+  const sectionHeight =
+    vh > 0
+      ? vh + vh * VALUES.length * scrollPerValue
+      : `calc(100dvh + ${VALUES.length * 42}dvh)`;
+
+  return (
+    <section ref={sectionRef} style={{ height: sectionHeight }} className="relative">
+      <div className="sticky top-28 pb-20 pt-6">
+        <Container>
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,20rem)_1fr]">
+            {/* Sidebar — active item tracks scroll */}
+            <div className="relative">
+              <div className="absolute bottom-2 left-[1.35rem] top-2 w-px bg-border" />
+              <motion.div
+                style={{ scaleY: progress }}
+                className="absolute bottom-2 left-[1.35rem] top-2 w-0.5 origin-top rounded-full bg-gradient-to-b from-primary to-accent shadow-[0_0_10px_var(--primary)]"
+              />
+              <div className="relative flex flex-col gap-1.5 pl-1">
+                {VALUES.map((v, i) => {
+                  const isActive = i === active;
+                  const Icon = v.icon;
+                  return (
+                    <div
+                      key={v.title}
+                      className={cn(
+                        "relative flex items-center gap-3.5 rounded-xl px-3 py-3.5 transition-opacity duration-300",
+                        isActive ? "opacity-100" : "opacity-45"
+                      )}
+                    >
+                      {isActive && (
+                        <motion.span
+                          layoutId="values-scroll-active"
+                          className="absolute inset-0 rounded-xl border border-primary/20 bg-surface shadow-md"
+                          transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                        />
+                      )}
+                      <span
+                        className={cn(
+                          "relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-lg text-white transition-transform duration-300",
+                          isActive && "scale-105"
+                        )}
+                        style={{
+                          backgroundImage: `linear-gradient(135deg, ${v.tint}, color-mix(in srgb, ${v.tint} 55%, #000))`,
+                        }}
+                      >
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span className="relative z-10 min-w-0 flex-1 font-display text-sm font-semibold tracking-tight text-foreground">
+                        {v.title}
+                      </span>
+                      <span className="relative z-10 font-mono text-[11px] font-semibold text-muted/70">
+                        {String(i + 1).padStart(2, "0")}
+                      </span>
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* Detail — crossfade driven by scroll progress */}
+            <div className="relative min-h-[24rem]">
+              {VALUES.map((v, i) => (
+                <ValuesScrollPanel key={v.title} v={v} index={i} n={VALUES.length} progress={progress} />
+              ))}
+            </div>
+          </div>
+
+          <div className="mt-10 flex items-center justify-center gap-2 text-sm text-muted">
+            <span>Scroll to explore our values</span>
+            <ArrowRight className="h-4 w-4 animate-pulse text-accent" />
+          </div>
+        </Container>
       </div>
-    </StaggerReveal>
+    </section>
   );
 }
 
@@ -1024,8 +1165,8 @@ function FounderNote() {
 }
 
 function ValuesSection() {
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.8", "end 0.5"] });
+  const headingRef = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: headingRef, offset: ["start 0.85", "start 0.55"] });
   const bar = useSpring(useTransform(scrollYProgress, [0, 1], [0, 1]), { stiffness: 120, damping: 30 });
 
   return (
@@ -1042,15 +1183,17 @@ function ValuesSection() {
           <ValuesShowcaseMobile />
         </Container>
       </div>
-      <div ref={ref} className="hidden md:block">
-        <Container className="scroll-mt-28 py-20 sm:py-28">
-          <SectionHeading eyebrow="Our values" title="What we care about" />
-          <motion.div
-            style={{ scaleX: bar }}
-            className="mx-auto mt-8 h-0.5 max-w-xs origin-left rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_var(--primary)]"
-          />
-          <ValuesShowcaseDesktop />
-        </Container>
+      <div className="hidden md:block">
+        <div ref={headingRef}>
+          <Container className="scroll-mt-28 pt-20 sm:pt-28">
+            <SectionHeading eyebrow="Our values" title="What we care about" />
+            <motion.div
+              style={{ scaleX: bar }}
+              className="mx-auto mt-8 h-0.5 max-w-xs origin-left rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_var(--primary)]"
+            />
+          </Container>
+        </div>
+        <ValuesShowcaseDesktop />
       </div>
     </>
   );
