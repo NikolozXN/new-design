@@ -1,13 +1,12 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   motion,
   AnimatePresence,
   useScroll,
   useSpring,
   useTransform,
-  useMotionValue,
   useMotionTemplate,
   useReducedMotion,
   type MotionValue,
@@ -39,6 +38,13 @@ import { Marquee } from "@/components/ui/marquee";
 import { Scramble } from "@/components/ui/scramble";
 import { revealFromLeft, revealFromRight, revealIn, revealUp } from "@/lib/motion";
 import { ScrollReveal, ScrollRevealOnce, StaggerReveal } from "@/components/ui/scroll-reveal";
+import {
+  ValuesMobileCinema,
+  StatsMobileRail,
+  MissionMobileEditorial,
+  TeamMobileFilmstrip,
+  MobileScrubBlock,
+} from "@/components/sections/about-mobile";
 import { cn } from "@/lib/utils";
 
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -70,6 +76,35 @@ const VALUES = [
   { icon: Globe, title: "Work in the open", tint: "#10b981", body: "A public roadmap, a public changelog, and a community that shapes what we build next. No black boxes." },
   { icon: Compass, title: "Long-term thinking", tint: "#6366f1", body: "We're independent and profitable by design — so we can make the right call, not the quarterly one." },
 ];
+
+/** Mobile-only copy — punchy headlines + tighter bodies for full-screen chapters. */
+const VALUES_MOBILE = [
+  { icon: Sparkles, kicker: "01 · Design", headline: "Craft beats clutter", title: "Craft over noise", tint: "#7c3aed", body: "Every interaction earns its place. We sweat details so your team feels calm — not buried in UI noise." },
+  { icon: ShieldCheck, kicker: "02 · Security", headline: "Trust isn't optional", title: "Trust by default", tint: "#0ea5e9", body: "SOC 2, SSO, and privacy by design — built for the strictest teams from day one, not bolted on later." },
+  { icon: Zap, kicker: "03 · Velocity", headline: "Ship, listen, repeat", title: "Bias for momentum", tint: "#f59e0b", body: "Small releases, fast feedback loops. What you tell us on Monday shows up in the product by Friday." },
+  { icon: Users, kicker: "04 · People", headline: "Built for real teams", title: "Teams first", tint: "#ec4899", body: "Messy handoffs, async time zones, cross-functional chaos — we design for how work actually happens." },
+  { icon: Globe, kicker: "05 · Transparency", headline: "No black boxes", title: "Work in the open", tint: "#10b981", body: "Public roadmap, public changelog, community-driven priorities. You always know what's next and why." },
+  { icon: Compass, kicker: "06 · Independence", headline: "Play the long game", title: "Long-term thinking", tint: "#6366f1", body: "Profitable and independent by choice — so we optimize for the right call, not the quarterly slide deck." },
+];
+
+const MILESTONES_MOBILE = [
+  { year: "2021", title: "Two builders, one bet", body: "Sofia and Marcus quit their product & eng roles to build the workspace they always wished existed." },
+  { year: "2022", title: "1,000 teams in 90 days", body: "Public launch. Design and eng teams tired of tool sprawl spread the word fast." },
+  { year: "2023", title: "$24M Series A", body: "Sequoia-led round with Accel and operator angels — fuel to grow the team and platform." },
+  { year: "2024", title: "Flowly AI ships", body: "One sentence → a fully estimated sprint plan. Our fastest-adopted feature ever." },
+  { year: "2026", title: "12k teams · 60 countries", body: "Profitable, independent, still obsessed with giving teams their focus back." },
+];
+
+const MISSION_MOBILE = {
+  eyebrow: "Our mission",
+  headline: "Give teams their",
+  highlight: "focus back.",
+  paragraphs: [
+    "In 2021, our founders watched fast-growing teams lose hours to status meetings, scattered docs, and tools that never synced.",
+    "They built one calm workspace — planning, tracking, and shipping together — where busywork fades and opening the app feels like relief.",
+    "Today, 12,000+ teams across 60 countries plan sprints, automate workflows, and ship faster. Small team, big craft — and we're just getting started.",
+  ],
+};
 
 const TEAM = [
   { name: "Sofia Chen", role: "Co-founder & CEO", from: "#7c3aed", to: "#a855f7", img: "https://randomuser.me/api/portraits/women/44.jpg" },
@@ -269,54 +304,12 @@ function ValuesShowcaseScroll() {
       : `calc(100dvh + ${VALUES.length * 50}dvh)`;
 
   return (
-    <section ref={sectionRef} style={{ height: sectionHeight }} className="relative">
-      <div className="sticky top-24 pb-16 pt-4 sm:top-28 sm:pb-20 sm:pt-6">
+    <section ref={sectionRef} style={{ height: sectionHeight }} className="relative hidden lg:block">
+      <div className="sticky top-28 pb-20 pt-6">
         <Container>
-          {/* Mobile — scroll-synced stepper + progress bar */}
-          <div className="mb-5 lg:hidden">
-            <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-              {VALUES.map((v, i) => {
-                const isActive = i === active;
-                const Icon = v.icon;
-                return (
-                  <div
-                    key={v.title}
-                    className={cn(
-                      "relative flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 transition-opacity duration-300",
-                      isActive ? "opacity-100" : "opacity-40"
-                    )}
-                  >
-                    {isActive && (
-                      <motion.span
-                        layoutId="values-scroll-active-mobile"
-                        className="absolute inset-0 rounded-full border border-primary/25 bg-surface shadow-sm"
-                        transition={{ type: "spring", stiffness: 380, damping: 32 }}
-                      />
-                    )}
-                    <span
-                      className="relative z-10 grid h-7 w-7 place-items-center rounded-md text-white"
-                      style={{
-                        backgroundImage: `linear-gradient(135deg, ${v.tint}, color-mix(in srgb, ${v.tint} 55%, #000))`,
-                      }}
-                    >
-                      <Icon className="h-3.5 w-3.5" />
-                    </span>
-                    <span className="relative z-10 max-w-[8rem] truncate font-display text-xs font-semibold text-foreground">
-                      {v.title}
-                    </span>
-                  </div>
-                );
-              })}
-            </div>
-            <motion.div
-              style={{ scaleX: progress }}
-              className="mt-3 h-0.5 origin-left rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_10px_var(--primary)]"
-            />
-          </div>
-
-          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-10">
+          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,20rem)_1fr]">
             {/* Desktop sidebar */}
-            <div className="relative hidden lg:block">
+            <div className="relative">
               <div className="absolute bottom-2 left-[1.35rem] top-2 w-px bg-border" />
               <motion.div
                 style={{ scaleY: progress }}
@@ -382,102 +375,6 @@ function ValuesShowcaseScroll() {
   );
 }
 
-/* ---------------------------------------------------------------------------
-   Team — editorial portrait cards with scroll parallax + 3D tilt on desktop.
---------------------------------------------------------------------------- */
-function TeamTilt({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
-  const reduce = useReducedMotion();
-  const cardRef = useRef<HTMLDivElement>(null);
-
-  const { scrollYProgress } = useScroll({
-    target: cardRef,
-    offset: ["start end", "end start"],
-  });
-  const depth = i % 3 === 1 ? 48 : 32;
-  const parallaxY = useSpring(useTransform(scrollYProgress, [0, 1], [depth, -depth]), {
-    stiffness: 120,
-    damping: 30,
-  });
-
-  const mx = useMotionValue(0);
-  const my = useMotionValue(0);
-  const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [9, -9]), { stiffness: 200, damping: 18 });
-  const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-12, 12]), { stiffness: 200, damping: 18 });
-  const glareX = useTransform(mx, [-0.5, 0.5], ["18%", "82%"]);
-  const glareY = useTransform(my, [-0.5, 0.5], ["18%", "82%"]);
-  const glare = useMotionTemplate`radial-gradient(220px circle at ${glareX} ${glareY}, rgba(255,255,255,0.4), transparent 60%)`;
-
-  function onMove(e: ReactMouseEvent<HTMLDivElement>) {
-    if (reduce) return;
-    const r = e.currentTarget.getBoundingClientRect();
-    mx.set((e.clientX - r.left) / r.width - 0.5);
-    my.set((e.clientY - r.top) / r.height - 0.5);
-  }
-  function onLeave() {
-    mx.set(0);
-    my.set(0);
-  }
-
-  return (
-    <ScrollReveal variants={revealIn} custom={i} className={cn("group", i % 3 === 1 && "sm:mt-10")}>
-      <motion.div
-        ref={cardRef}
-        onMouseMove={onMove}
-        onMouseLeave={onLeave}
-        whileTap={{ scale: 0.97 }}
-        style={{
-          rotateX: reduce ? 0 : rotateX,
-          rotateY: reduce ? 0 : rotateY,
-          transformPerspective: 900,
-          y: reduce ? undefined : parallaxY,
-        }}
-        className="relative aspect-[4/5] overflow-hidden rounded-3xl shadow-xl ring-1 ring-border [transform-style:preserve-3d] md:[transform-style:preserve-3d]"
-      >
-        <span
-          className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-white"
-          style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
-        >
-          {initials(m.name)}
-        </span>
-        {/* eslint-disable-next-line @next/next/no-img-element */}
-        <img
-          src={m.img}
-          alt={m.name}
-          loading="lazy"
-          onError={(e) => {
-            e.currentTarget.style.display = "none";
-          }}
-          className="absolute inset-0 h-full w-full object-cover grayscale-[35%] transition-[filter] duration-500 group-hover:grayscale-0"
-        />
-        <span
-          aria-hidden
-          className="pointer-events-none absolute inset-0 opacity-50 mix-blend-soft-light transition-opacity duration-500 group-hover:opacity-0"
-          style={{ backgroundImage: `linear-gradient(150deg, ${m.from}, ${m.to})` }}
-        />
-        <motion.span
-          aria-hidden
-          style={{ background: glare }}
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
-        />
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
-        <span className="absolute left-4 top-4 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
-          {String(i + 1).padStart(2, "0")}
-        </span>
-        <span className="absolute right-3 top-3 grid h-8 w-8 translate-y-1 place-items-center rounded-full bg-white/15 text-white opacity-0 backdrop-blur transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
-          <ArrowUpRight className="h-4 w-4" />
-        </span>
-        <div className="absolute inset-x-0 bottom-0 p-4" style={{ transform: "translateZ(45px)" }}>
-          <div className="font-display text-base font-semibold text-white">{m.name}</div>
-          <div className="mt-0.5 text-xs text-white/75 sm:overflow-hidden">
-            <span className="sm:block sm:translate-y-5 sm:opacity-0 sm:transition-all sm:duration-300 sm:group-hover:translate-y-0 sm:group-hover:opacity-100">
-              {m.role}
-            </span>
-          </div>
-        </div>
-      </motion.div>
-    </ScrollReveal>
-  );
-}
 /* ---------------------------------------------------------------------------
    Milestones — DESKTOP: horizontal scroll-pinned journey (landing-grade).
    Cards never drop below 45% opacity; section gets estimated height instantly
@@ -624,30 +521,21 @@ function MilestonesPinned() {
 }
 
 /* MOBILE: vertical timeline — whileInView reveals (reliable on touch) */
-function MilestoneRowMobile({ m, i }: { m: (typeof MILESTONES)[number]; i: number }) {
+function MilestoneRowMobile({ m }: { m: (typeof MILESTONES_MOBILE)[number] }) {
   return (
-    <ScrollReveal
-      variants={i % 2 === 0 ? revealFromLeft : revealFromRight}
-      custom={i * 0.4}
-      className="relative pb-14 pl-14 last:pb-0"
-    >
-      <ScrollRevealOnce
-        from={{ scale: 0, opacity: 0 }}
-        to={{ scale: 1, opacity: 1 }}
-        transition={{ duration: 0.5, ease: [0.16, 1, 0.3, 1], delay: 0.1 }}
-        className="absolute left-[1.15rem] top-2 z-10 h-5 w-5 -translate-x-1/2"
-      >
+    <MobileScrubBlock tall={false} className="relative pl-14">
+      <span className="absolute left-[1.15rem] top-8 z-10 h-5 w-5 -translate-x-1/2">
         <span className="absolute -inset-2 rounded-full bg-primary/40 blur-md" />
         <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
-      </ScrollRevealOnce>
+      </span>
       <span className="block font-display text-5xl font-bold leading-none tracking-tight text-gradient-brand">
         {m.year}
       </span>
-      <div className="mt-3 rounded-card border border-border bg-surface/80 p-4 shadow-xl shadow-black/5 backdrop-blur dark:shadow-black/30">
+      <div className="mt-3 rounded-[1.25rem] border border-border bg-surface p-5 shadow-xl shadow-black/5 dark:shadow-black/30">
         <h3 className="font-display text-lg font-semibold text-foreground">{m.title}</h3>
         <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
       </div>
-    </ScrollReveal>
+    </MobileScrubBlock>
   );
 }
 
@@ -656,7 +544,11 @@ function MilestonesMobile() {
     <section className="relative py-16 md:hidden">
       <Aurora className="opacity-50" />
       <Container>
-        <SectionHeading eyebrow="Milestones" title="How we got here" />
+        <SectionHeading
+          eyebrow="The journey"
+          title="Five years, five chapters"
+          subtitle="Scroll the timeline — each stop is a moment that shaped Flowly."
+        />
         <div className="relative mx-auto mt-12 max-w-xl">
           <span className="absolute left-[1.15rem] top-0 h-full w-px -translate-x-1/2 bg-border" />
           <ScrollRevealOnce
@@ -665,8 +557,8 @@ function MilestonesMobile() {
             transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
             className="absolute left-[1.15rem] top-0 h-full w-0.5 origin-top -translate-x-1/2 rounded-full bg-gradient-to-b from-primary to-accent shadow-[0_0_12px_2px_var(--primary)]"
           />
-          {MILESTONES.map((m, i) => (
-            <MilestoneRowMobile key={m.year} m={m} i={i} />
+          {MILESTONES_MOBILE.map((m) => (
+            <MilestoneRowMobile key={m.year} m={m} />
           ))}
         </div>
       </Container>
@@ -719,29 +611,7 @@ const MISSION_PARAS = [
 ];
 
 function MissionStoryMobile() {
-  return (
-    <Container className="py-12 sm:py-20">
-      <ScrollReveal variants={revealFromLeft}>
-        <ScrollRevealOnce
-          from={{ scaleX: 0 }}
-          to={{ scaleX: 1 }}
-          transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
-          className="mb-6 block h-1 w-16 origin-left rounded-full bg-gradient-to-r from-primary to-accent"
-        />
-        <h2 className="text-balance font-display text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-4xl">
-          We believe software should give teams their{" "}
-          <span className="text-gradient-brand">focus back.</span>
-        </h2>
-      </ScrollReveal>
-      <div className="mt-10 space-y-8">
-        {MISSION_PARAS.map((text, i) => (
-          <ScrollReveal key={i} variants={i % 2 === 0 ? revealFromLeft : revealFromRight} custom={i * 0.15}>
-            <p className="text-lg leading-relaxed text-muted">{text}</p>
-          </ScrollReveal>
-        ))}
-      </div>
-    </Container>
-  );
+  return <MissionMobileEditorial {...MISSION_MOBILE} />;
 }
 
 function MissionStoryDesktop() {
@@ -816,33 +686,7 @@ function MissionParagraph({
    Stats — scroll-scrubbed band with a glowing divider that draws across
 --------------------------------------------------------------------------- */
 function StatsBandMobile() {
-  return (
-    <Container className="py-16 sm:py-20">
-      <div className="relative overflow-hidden rounded-card border border-border bg-border">
-        <ScrollRevealOnce
-          from={{ scaleX: 0 }}
-          to={{ scaleX: 1 }}
-          transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
-          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 origin-left bg-gradient-to-r from-primary via-accent to-primary shadow-[0_0_16px_2px_var(--primary)]"
-        />
-        <div className="grid grid-cols-2 sm:grid-cols-4">
-          {STATS.map((s, i) => (
-            <ScrollReveal
-              key={s.label}
-              variants={revealIn}
-              custom={i}
-              className="border-border bg-surface p-6 text-center sm:border-l sm:p-8 sm:first:border-l-0"
-            >
-              <div className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-                {s.plain ? s.plain : <Counter value={s.value} suffix={s.suffix} />}
-              </div>
-              <div className="mt-1.5 text-sm text-muted">{s.label}</div>
-            </ScrollReveal>
-          ))}
-        </div>
-      </div>
-    </Container>
-  );
+  return <StatsMobileRail stats={STATS} />;
 }
 
 function StatsBandDesktop() {
@@ -999,47 +843,44 @@ function TeamPinned() {
 
 function FounderNoteMobile() {
   return (
-    <Container className="pb-6 sm:pb-10">
-      <ScrollRevealOnce
-        from={{ opacity: 0, y: 48, scale: 0.92, rotate: -2 }}
-        to={{ opacity: 1, y: 0, scale: 1, rotate: 0 }}
-        transition={{ duration: 0.75, ease: [0.16, 1, 0.3, 1] }}
-        className="relative mx-auto max-w-3xl overflow-hidden rounded-card border border-border bg-surface p-8 text-center shadow-xl shadow-black/5 sm:p-12 dark:shadow-black/30"
-      >
-        <span aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
-        <Quote className="mx-auto h-8 w-8 text-primary/70" />
-        <blockquote className="mt-5 text-balance font-display text-xl font-semibold leading-snug tracking-tight text-foreground sm:text-2xl">
-          &ldquo;We&apos;re not building another tool to add to the pile. We&apos;re building the one
-          that makes the pile disappear.&rdquo;
-        </blockquote>
-        <figcaption className="mt-7 flex items-center justify-center gap-4">
-          <div className="flex -space-x-3">
-            {[TEAM[0], TEAM[1]].map((m) => (
-              <span
-                key={m.name}
-                className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white ring-2 ring-surface"
-                style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
-              >
-                {initials(m.name)}
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={m.img}
-                  alt={m.name}
-                  loading="lazy"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                  }}
-                  className="absolute inset-0 h-full w-full object-cover"
-                />
-              </span>
-            ))}
-          </div>
-          <div className="text-left">
-            <div className="text-sm font-semibold text-foreground">Sofia Chen &amp; Marcus Lee</div>
-            <div className="text-xs text-muted">Co-founders, Flowly</div>
-          </div>
-        </figcaption>
-      </ScrollRevealOnce>
+    <Container className="pb-6 sm:pb-10 md:hidden">
+      <MobileScrubBlock tall={false}>
+        <figure className="relative mx-auto max-w-3xl overflow-hidden rounded-[1.75rem] border border-border bg-surface p-8 text-center shadow-2xl shadow-black/5 dark:shadow-black/30">
+          <span aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
+          <Quote className="mx-auto h-8 w-8 text-primary/70" />
+          <blockquote className="mt-5 text-balance font-display text-xl font-semibold leading-snug tracking-tight text-foreground">
+            &ldquo;We&apos;re not building another tool to add to the pile. We&apos;re building the one
+            that makes the pile disappear.&rdquo;
+          </blockquote>
+          <figcaption className="mt-7 flex items-center justify-center gap-4">
+            <div className="flex -space-x-3">
+              {[TEAM[0], TEAM[1]].map((m) => (
+                <span
+                  key={m.name}
+                  className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white ring-2 ring-surface"
+                  style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
+                >
+                  {initials(m.name)}
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={m.img}
+                    alt={m.name}
+                    loading="lazy"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                    }}
+                    className="absolute inset-0 h-full w-full object-cover"
+                  />
+                </span>
+              ))}
+            </div>
+            <div className="text-left">
+              <div className="text-sm font-semibold text-foreground">Sofia Chen &amp; Marcus Lee</div>
+              <div className="text-xs text-muted">Co-founders, Flowly</div>
+            </div>
+          </figcaption>
+        </figure>
+      </MobileScrubBlock>
     </Container>
   );
 }
@@ -1126,16 +967,31 @@ function ValuesSection() {
 
   return (
     <>
-      <div ref={headingRef}>
-        <Container className="scroll-mt-28 pt-20 sm:pt-28">
-          <SectionHeading eyebrow="Our values" title="What we care about" />
-          <motion.div
-            style={{ scaleX: bar }}
-            className="mx-auto mt-8 h-0.5 max-w-xs origin-left rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_var(--primary)]"
+      {/* Mobile — cinematic full-screen chapters */}
+      <div className="lg:hidden">
+        <Container className="scroll-mt-28 pt-20">
+          <SectionHeading
+            eyebrow="Inside Flowly"
+            title="Six beliefs. One slow scroll."
+            subtitle="Each value is a full chapter — keep scrolling to see what we won't compromise on."
           />
         </Container>
+        <ValuesMobileCinema values={VALUES_MOBILE} />
       </div>
-      <ValuesShowcaseScroll />
+
+      {/* Desktop — scroll-scrubbed sidebar + panel */}
+      <div className="hidden lg:block">
+        <div ref={headingRef}>
+          <Container className="scroll-mt-28 pt-20 sm:pt-28">
+            <SectionHeading eyebrow="Our values" title="What we care about" />
+            <motion.div
+              style={{ scaleX: bar }}
+              className="mx-auto mt-8 h-0.5 max-w-xs origin-left rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_var(--primary)]"
+            />
+          </Container>
+        </div>
+        <ValuesShowcaseScroll />
+      </div>
     </>
   );
 }
@@ -1202,22 +1058,9 @@ export function About() {
       {/* Values */}
       <ValuesSection />
 
-      {/* Team — pinned gallery on desktop, tilt grid on mobile */}
+      {/* Team — film strip on mobile, pinned gallery on desktop */}
       <div className="pb-24 sm:pb-32">
-        <div className="md:hidden">
-          <Container>
-            <SectionHeading
-              eyebrow="The team"
-              title="The people behind Flowly"
-              subtitle="A senior team from Linear, Notion, Stripe, and Figma — obsessed with the craft of great software."
-            />
-            <div className="mt-14 grid grid-cols-2 items-start gap-4 sm:grid-cols-3 sm:gap-6">
-              {TEAM.map((m, i) => (
-                <TeamTilt key={m.name} m={m} i={i} />
-              ))}
-            </div>
-          </Container>
-        </div>
+        <TeamMobileFilmstrip team={TEAM} />
         <TeamPinned />
       </div>
 
