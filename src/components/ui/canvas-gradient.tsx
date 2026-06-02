@@ -1,7 +1,8 @@
 "use client";
 
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { useReducedMotion } from "framer-motion";
+import { cn } from "@/lib/utils";
 
 type Blob = {
   hue: number;
@@ -15,38 +16,52 @@ type Blob = {
   dy: number;
 };
 
+/** CSS-only gradient — zero JS loop, used on mobile and reduced motion. */
+export function StaticGradient({ className }: { className?: string }) {
+  return (
+    <div aria-hidden className={cn("absolute inset-0 overflow-hidden", className)}>
+      <div className="absolute left-[8%] top-[-12%] h-[55%] w-[55%] rounded-full bg-primary/30 blur-[72px]" />
+      <div className="absolute right-[4%] top-[8%] h-[48%] w-[48%] rounded-full bg-accent/18 blur-[72px]" />
+      <div className="absolute bottom-[-8%] left-1/4 h-[52%] w-[52%] rounded-full bg-primary/22 blur-[72px]" />
+    </div>
+  );
+}
+
 /**
- * Lightweight interactive gradient field rendered on a 2D canvas: soft color
- * "blobs" drift and lerp toward the cursor, blended additively for an aurora
- * look. Pauses when off-screen and falls back to a static frame for reduced
- * motion. No WebGL / external deps.
+ * Interactive gradient field. Desktop + fine pointer: lightweight canvas.
+ * Everything else: static CSS blobs (no RAF, no blank wait on hydration).
  */
 export function CanvasGradient({ className }: { className?: string }) {
   const ref = useRef<HTMLCanvasElement>(null);
   const reduce = useReducedMotion();
+  const [animated, setAnimated] = useState(false);
 
   useEffect(() => {
+    const ok =
+      !reduce &&
+      window.matchMedia("(min-width: 768px) and (pointer: fine)").matches;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setAnimated(ok);
+  }, [reduce]);
+
+  useEffect(() => {
+    if (!animated) return;
     const canvas = ref.current;
     if (!canvas) return;
     const ctx = canvas.getContext("2d");
     if (!ctx) return;
 
-    const styles = getComputedStyle(document.documentElement);
-    // Pull brand hues from CSS so the canvas re-themes with --primary/--accent.
     const palette = [
-      { hue: 265, sat: 85, light: 60, alpha: 0.55 }, // violet
-      { hue: 286, sat: 90, light: 65, alpha: 0.45 }, // fuchsia-violet
-      { hue: 78, sat: 95, light: 62, alpha: 0.32 }, // lime accent
-      { hue: 250, sat: 80, light: 55, alpha: 0.4 }, // indigo
+      { hue: 265, sat: 85, light: 60, alpha: 0.55 },
+      { hue: 286, sat: 90, light: 65, alpha: 0.45 },
+      { hue: 78, sat: 95, light: 62, alpha: 0.32 },
+      { hue: 250, sat: 80, light: 55, alpha: 0.4 },
     ];
-    void styles;
 
     let w = 0;
     let h = 0;
-    const mobile = window.matchMedia("(max-width: 768px)").matches;
-    const dpr = Math.min(window.devicePixelRatio || 1, mobile ? 1 : 2);
-    const targetFps = mobile ? 24 : 30;
-    const frameMs = 1000 / targetFps;
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const frameMs = 1000 / 30;
     let lastFrame = 0;
     const blobs: Blob[] = [];
     const mouse = { x: 0.5, y: 0.4, tx: 0.5, ty: 0.4 };
@@ -86,7 +101,6 @@ export function CanvasGradient({ className }: { className?: string }) {
         if (b.x < -w * 0.3 || b.x > w * 1.3) b.dx *= -1;
         if (b.y < -h * 0.3 || b.y > h * 1.3) b.dy *= -1;
 
-        // first two blobs chase the cursor for interactivity
         const cx = i < 2 ? b.x + (mouse.x * w - b.x) * 0.12 : b.x;
         const cy = i < 2 ? b.y + (mouse.y * h - b.y) * 0.12 : b.y;
 
@@ -126,23 +140,10 @@ export function CanvasGradient({ className }: { className?: string }) {
       seed();
       draw();
     };
-    const onVisibility = () => {
-      if (document.hidden) {
-        running = false;
-        cancelAnimationFrame(raf);
-        return;
-      }
-      const rect = canvas!.getBoundingClientRect();
-      running =
-        !reduce &&
-        rect.bottom > 0 &&
-        rect.top < window.innerHeight;
-      if (running) raf = requestAnimationFrame(loop);
-    };
 
     const io = new IntersectionObserver(
       ([entry]) => {
-        running = entry.isIntersecting && !reduce && !document.hidden;
+        running = entry.isIntersecting && !document.hidden;
         if (running) raf = requestAnimationFrame(loop);
         else cancelAnimationFrame(raf);
       },
@@ -150,20 +151,20 @@ export function CanvasGradient({ className }: { className?: string }) {
     );
     io.observe(canvas);
 
-    if (!reduce) {
-      window.addEventListener("mousemove", onMouse, { passive: true });
-      window.addEventListener("resize", onResize);
-      document.addEventListener("visibilitychange", onVisibility);
-    }
+    window.addEventListener("mousemove", onMouse, { passive: true });
+    window.addEventListener("resize", onResize);
 
     return () => {
       cancelAnimationFrame(raf);
       io.disconnect();
       window.removeEventListener("mousemove", onMouse);
       window.removeEventListener("resize", onResize);
-      document.removeEventListener("visibilitychange", onVisibility);
     };
-  }, [reduce]);
+  }, [animated]);
+
+  if (!animated) {
+    return <StaticGradient className={className} />;
+  }
 
   return (
     <canvas

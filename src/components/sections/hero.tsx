@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import {
   motion,
   useScroll,
@@ -27,6 +27,16 @@ const STATS = [
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
+  const [parallax, setParallax] = useState(false);
+
+  useEffect(() => {
+    const ok =
+      !reduce &&
+      window.matchMedia("(min-width: 768px) and (pointer: fine)").matches;
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    setParallax(ok);
+  }, [reduce]);
+
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
@@ -48,10 +58,10 @@ export function Hero() {
         <CanvasGradient className="opacity-80 dark:opacity-90" />
       </div>
       <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]" />
-      <div className="grain pointer-events-none absolute inset-0 -z-10 opacity-[0.04] mix-blend-overlay" />
+      <div className="grain pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.04] mix-blend-overlay md:block" />
 
       <Container>
-        <motion.div style={reduce ? undefined : { y: textY }}>
+        <motion.div style={parallax ? { y: textY } : undefined}>
           {/* Status pill */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -120,16 +130,16 @@ export function Hero() {
         <div className="perspective mx-auto mt-20 max-w-5xl">
           <motion.div
             style={
-              reduce
-                ? undefined
-                : { rotateX, scale, y, transformStyle: "preserve-3d" }
+              parallax
+                ? { rotateX, scale, y, transformStyle: "preserve-3d" }
+                : undefined
             }
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             transition={{ duration: 0.9, delay: 0.5 }}
           >
-            <div className="relative animate-float">
-              <div className="absolute -inset-x-12 -top-12 bottom-0 -z-10 rounded-[3rem] bg-gradient-to-b from-primary/30 via-accent/10 to-transparent blur-3xl" />
+            <div className="relative md:animate-float">
+              <div className="absolute -inset-x-12 -top-12 bottom-0 -z-10 hidden rounded-[3rem] bg-gradient-to-b from-primary/30 via-accent/10 to-transparent blur-3xl md:block" />
               <DashboardMock />
             </div>
           </motion.div>

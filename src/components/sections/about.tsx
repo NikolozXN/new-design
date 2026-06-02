@@ -224,15 +224,9 @@ function TeamTilt({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
     offset: ["start end", "end start"],
   });
   const depth = i % 3 === 1 ? 72 : 46;
-  const y = useSpring(useTransform(scrollYProgress, [0, 1], [depth, -depth]), {
-    stiffness: 120,
-    damping: 30,
-  });
-  const opacity = useTransform(scrollYProgress, [0, 0.16], [0, 1]);
-  const scale = useSpring(useTransform(scrollYProgress, [0, 0.2], [0.85, 1]), {
-    stiffness: 140,
-    damping: 26,
-  });
+  const y = useTransform(scrollYProgress, [0, 1], [depth, -depth]);
+  const opacity = useTransform(scrollYProgress, [0, 0.12], [0.6, 1]);
+  const scale = useTransform(scrollYProgress, [0, 0.18], [0.92, 1]);
 
   // Pointer-tracked 3D tilt (desktop)
   const mx = useMotionValue(0);
@@ -320,16 +314,15 @@ function TeamTilt({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
    ~45% opacity, so it's always visible even before hydration.
 --------------------------------------------------------------------------- */
 function MilestoneRow({ m, i }: { m: (typeof MILESTONES)[number]; i: number }) {
-  const left = i % 2 === 0; // which side of the centre rail (desktop only)
+  const left = i % 2 === 0;
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.92", "start 0.45"] });
-  const opacity = useTransform(scrollYProgress, [0, 1], [0.45, 1]);
-  const y = useTransform(scrollYProgress, [0, 1], [30, 0]);
+  const y = useTransform(scrollYProgress, [0, 1], [24, 0]);
   const dotScale = useTransform(scrollYProgress, [0, 1], [0.3, 1]);
   const dotGlow = useTransform(scrollYProgress, [0.2, 1], [0, 1]);
 
   const card = (
-    <motion.div style={{ opacity, y }} className={cn("md:max-w-sm", left && "md:ml-auto md:text-right")}>
+    <motion.div style={{ y }} className={cn("md:max-w-sm", left && "md:ml-auto md:text-right")}>
       <span className="font-display text-4xl font-bold leading-none tracking-tight text-gradient-brand sm:text-5xl">
         {m.year}
       </span>
@@ -341,7 +334,7 @@ function MilestoneRow({ m, i }: { m: (typeof MILESTONES)[number]; i: number }) {
   );
 
   return (
-    <div className="relative pb-12 pl-14 last:pb-0 md:grid md:grid-cols-2 md:gap-14 md:pl-0">
+    <div ref={ref} className="relative pb-12 pl-14 last:pb-0 md:grid md:grid-cols-2 md:gap-14 md:pl-0">
       <motion.span
         style={{ scale: dotScale }}
         className="absolute left-[1.15rem] top-1.5 z-10 h-5 w-5 -translate-x-1/2 md:left-1/2"
@@ -368,11 +361,7 @@ function MilestoneRow({ m, i }: { m: (typeof MILESTONES)[number]; i: number }) {
 function MilestonesTimeline() {
   const ref = useRef<HTMLDivElement>(null);
   const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.75", "end 0.65"] });
-  const fill = useSpring(useTransform(scrollYProgress, [0, 1], [0, 1]), {
-    stiffness: 120,
-    damping: 30,
-    restDelta: 0.001,
-  });
+  const fill = useTransform(scrollYProgress, [0, 1], [0, 1]);
 
   return (
     <section className="relative overflow-hidden py-16 sm:py-24">
