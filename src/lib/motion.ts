@@ -60,7 +60,7 @@ export const scaleUp: Variants = {
 export const inView = { once: true, amount: 0.2 } as const;
 
 /** Triggers earlier on phones — fixes whileInView not firing on mobile scroll. */
-export const touchView = { once: true, amount: 0.08, margin: "0px 0px -120px 0px" } as const;
+export const touchView = { once: true, amount: 0.01, margin: "0px 0px 200px 0px" } as const;
 
 /** Blur-free rise — safe for iOS Safari viewport reveals. */
 export const revealUp: Variants = {

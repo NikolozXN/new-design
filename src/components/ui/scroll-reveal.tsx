@@ -7,8 +7,47 @@ import {
   type HTMLMotionProps,
   type Variants,
 } from "framer-motion";
-import { useRef, type ReactNode } from "react";
+import { useEffect, useRef, useState, type ReactNode } from "react";
 import { staggerContainer, touchView, EASE } from "@/lib/motion";
+
+/** useInView + scroll fallback — iOS Safari often misses IntersectionObserver on first paint. */
+function useRevealVisible() {
+  const ref = useRef<HTMLDivElement>(null);
+  const inView = useInView(ref, touchView);
+  const reduce = useReducedMotion();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (reduce) {
+      setVisible(true);
+      return;
+    }
+    if (inView) setVisible(true);
+  }, [inView, reduce]);
+
+  useEffect(() => {
+    if (reduce || visible) return;
+    const el = ref.current;
+    if (!el) return;
+
+    const check = () => {
+      const rect = el.getBoundingClientRect();
+      if (rect.top < window.innerHeight * 0.94 && rect.bottom > window.innerHeight * 0.04) {
+        setVisible(true);
+      }
+    };
+
+    check();
+    window.addEventListener("scroll", check, { passive: true });
+    window.addEventListener("resize", check);
+    return () => {
+      window.removeEventListener("scroll", check);
+      window.removeEventListener("resize", check);
+    };
+  }, [reduce, visible]);
+
+  return { ref, show: Boolean(reduce || visible || inView) };
+}
 
 type RevealProps = Omit<HTMLMotionProps<"div">, "initial" | "animate" | "whileInView"> & {
   children: ReactNode;
@@ -18,9 +57,7 @@ type RevealProps = Omit<HTMLMotionProps<"div">, "initial" | "animate" | "whileIn
 
 /** Reliable scroll reveal — useInView + animate (more reliable than whileInView on iOS). */
 export function ScrollReveal({ children, variants, custom, ...props }: RevealProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, touchView);
-  const reduce = useReducedMotion();
+  const { ref, show } = useRevealVisible();
 
   return (
     <motion.div
@@ -28,7 +65,7 @@ export function ScrollReveal({ children, variants, custom, ...props }: RevealPro
       variants={variants}
       custom={custom}
       initial="hidden"
-      animate={reduce || inView ? "show" : "hidden"}
+      animate={show ? "show" : "hidden"}
       {...props}
     >
       {children}
@@ -49,16 +86,14 @@ export function StaggerReveal({
   delay = 0,
   ...props
 }: StaggerRevealProps) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, touchView);
-  const reduce = useReducedMotion();
+  const { ref, show } = useRevealVisible();
 
   return (
     <motion.div
       ref={ref}
       variants={staggerContainer(stagger, delay)}
       initial="hidden"
-      animate={reduce || inView ? "show" : "hidden"}
+      animate={show ? "show" : "hidden"}
       {...props}
     >
       {children}
@@ -80,16 +115,14 @@ export function ScrollRevealOnce({
   to?: Record<string, number>;
   transition?: { duration?: number; ease?: typeof EASE; delay?: number };
 }) {
-  const ref = useRef<HTMLDivElement>(null);
-  const inView = useInView(ref, touchView);
-  const reduce = useReducedMotion();
+  const { ref, show } = useRevealVisible();
 
   return (
     <motion.div
       ref={ref}
       className={className}
       initial={from}
-      animate={reduce || inView ? to : from}
+      animate={show ? to : from}
       transition={{ duration: 0.65, ease: EASE, ...transition }}
       aria-hidden={children ? undefined : true}
     >

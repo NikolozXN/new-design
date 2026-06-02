@@ -23,7 +23,7 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Scramble } from "@/components/ui/scramble";
 import { IconTile } from "@/components/ui/icon-tile";
 import { FeatureArt } from "@/components/ui/feature-art";
-import { StaggerReveal, ScrollReveal } from "@/components/ui/scroll-reveal";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
 import { revealFromLeft, revealIn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
@@ -158,13 +158,13 @@ function FeaturesGrid() {
         <ScrollReveal variants={revealFromLeft}>
           <IntroPanel />
         </ScrollReveal>
-        <StaggerReveal stagger={0.08} className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (
-            <motion.div key={f.num} variants={revealIn} custom={i} className="min-h-[28rem]">
+            <ScrollReveal key={f.num} variants={revealIn} custom={i} className="min-h-[28rem]">
               <Panel f={f} />
-            </motion.div>
+            </ScrollReveal>
           ))}
-        </StaggerReveal>
+        </div>
       </Container>
     </section>
   );

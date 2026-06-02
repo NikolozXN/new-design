@@ -45,19 +45,6 @@ const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : use
 /** Safe scroll height before JS measures the pinned track — prevents blank gaps. */
 const PINNED_EST_SCROLL = 3000;
 
-/** Phones / touch: use whileInView (useScroll is unreliable on mobile Safari). */
-function useIsMobile() {
-  const [mobile, setMobile] = useState(true);
-  useEffect(() => {
-    const mq = window.matchMedia("(max-width: 767px)");
-    const update = () => setMobile(mq.matches);
-    update();
-    mq.addEventListener("change", update);
-    return () => mq.removeEventListener("change", update);
-  }, []);
-  return mobile;
-}
-
 const BACKERS = ["Sequoia", "Accel", "Y Combinator", "Lightspeed", "First Round"];
 
 const STATS = [
@@ -112,8 +99,7 @@ function initials(name: string) {
 }
 
 /* ---------------------------------------------------------------------------
-   Values — desktop: scroll-scrubbed sticky list + crossfading detail panel.
-   Mobile: tap accordion with scroll reveals.
+   Values — scroll-scrubbed sticky showcase (desktop + mobile).
 --------------------------------------------------------------------------- */
 
 function ValuesPanelContent({
@@ -129,7 +115,7 @@ function ValuesPanelContent({
   return (
     <div
       className={cn(
-        "relative flex h-full min-h-[22rem] flex-col overflow-hidden rounded-card border border-border bg-surface p-8 shadow-xl sm:p-10",
+        "relative flex h-full min-h-[17rem] flex-col overflow-hidden rounded-card border border-border bg-surface p-6 shadow-xl sm:min-h-[20rem] sm:p-8 lg:min-h-[22rem] lg:p-10",
         className
       )}
       style={{ boxShadow: `0 32px 64px -32px ${v.tint}55` }}
@@ -151,10 +137,10 @@ function ValuesPanelContent({
       >
         <Icon className="h-6 w-6" />
       </span>
-      <h3 className="relative mt-8 font-display text-3xl font-bold tracking-tight text-foreground">
+      <h3 className="relative mt-6 font-display text-2xl font-bold tracking-tight text-foreground sm:mt-8 sm:text-3xl">
         {v.title}
       </h3>
-      <p className="relative mt-4 max-w-lg text-lg leading-relaxed text-muted">{v.body}</p>
+      <p className="relative mt-3 max-w-lg text-base leading-relaxed text-muted sm:mt-4 sm:text-lg">{v.body}</p>
     </div>
   );
 }
@@ -194,8 +180,8 @@ function ValuesScrollPanel({
   );
 }
 
-/** Hover/click fallback when reduced motion is on. */
-function ValuesShowcaseDesktopStatic() {
+/** Static fallback when reduced motion is on. */
+function ValuesShowcaseStatic() {
   const [active, setActive] = useState(0);
 
   return (
@@ -242,7 +228,7 @@ function ValuesShowcaseDesktopStatic() {
   );
 }
 
-function ValuesShowcaseDesktop() {
+function ValuesShowcaseScroll() {
   const reduce = useReducedMotion();
   const sectionRef = useRef<HTMLDivElement>(null);
   const [active, setActive] = useState(0);
@@ -250,7 +236,7 @@ function ValuesShowcaseDesktop() {
 
   const { scrollYProgress } = useScroll({
     target: sectionRef,
-    offset: ["start 0.2", "end 0.8"],
+    offset: ["start 0.15", "end 0.85"],
   });
   const progress = useSpring(scrollYProgress, {
     stiffness: 110,
@@ -274,21 +260,63 @@ function ValuesShowcaseDesktop() {
     return () => window.removeEventListener("resize", measure);
   }, []);
 
-  if (reduce) return <ValuesShowcaseDesktopStatic />;
+  if (reduce) return <ValuesShowcaseStatic />;
 
-  const scrollPerValue = 0.42;
+  const scrollPerValue = 0.5;
   const sectionHeight =
     vh > 0
       ? vh + vh * VALUES.length * scrollPerValue
-      : `calc(100dvh + ${VALUES.length * 42}dvh)`;
+      : `calc(100dvh + ${VALUES.length * 50}dvh)`;
 
   return (
     <section ref={sectionRef} style={{ height: sectionHeight }} className="relative">
-      <div className="sticky top-28 pb-20 pt-6">
+      <div className="sticky top-24 pb-16 pt-4 sm:top-28 sm:pb-20 sm:pt-6">
         <Container>
-          <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,20rem)_1fr]">
-            {/* Sidebar — active item tracks scroll */}
-            <div className="relative">
+          {/* Mobile — scroll-synced stepper + progress bar */}
+          <div className="mb-5 lg:hidden">
+            <div className="flex gap-2 overflow-x-auto pb-1 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+              {VALUES.map((v, i) => {
+                const isActive = i === active;
+                const Icon = v.icon;
+                return (
+                  <div
+                    key={v.title}
+                    className={cn(
+                      "relative flex shrink-0 items-center gap-2 rounded-full border px-3 py-2 transition-opacity duration-300",
+                      isActive ? "opacity-100" : "opacity-40"
+                    )}
+                  >
+                    {isActive && (
+                      <motion.span
+                        layoutId="values-scroll-active-mobile"
+                        className="absolute inset-0 rounded-full border border-primary/25 bg-surface shadow-sm"
+                        transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                      />
+                    )}
+                    <span
+                      className="relative z-10 grid h-7 w-7 place-items-center rounded-md text-white"
+                      style={{
+                        backgroundImage: `linear-gradient(135deg, ${v.tint}, color-mix(in srgb, ${v.tint} 55%, #000))`,
+                      }}
+                    >
+                      <Icon className="h-3.5 w-3.5" />
+                    </span>
+                    <span className="relative z-10 max-w-[8rem] truncate font-display text-xs font-semibold text-foreground">
+                      {v.title}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
+            <motion.div
+              style={{ scaleX: progress }}
+              className="mt-3 h-0.5 origin-left rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_10px_var(--primary)]"
+            />
+          </div>
+
+          <div className="grid items-start gap-6 lg:grid-cols-[minmax(0,20rem)_1fr] lg:gap-10">
+            {/* Desktop sidebar */}
+            <div className="relative hidden lg:block">
               <div className="absolute bottom-2 left-[1.35rem] top-2 w-px bg-border" />
               <motion.div
                 style={{ scaleY: progress }}
@@ -337,14 +365,14 @@ function ValuesShowcaseDesktop() {
             </div>
 
             {/* Detail — crossfade driven by scroll progress */}
-            <div className="relative min-h-[24rem]">
+            <div className="relative min-h-[17rem] sm:min-h-[20rem] lg:min-h-[24rem]">
               {VALUES.map((v, i) => (
                 <ValuesScrollPanel key={v.title} v={v} index={i} n={VALUES.length} progress={progress} />
               ))}
             </div>
           </div>
 
-          <div className="mt-10 flex items-center justify-center gap-2 text-sm text-muted">
+          <div className="mt-8 flex items-center justify-center gap-2 text-sm text-muted sm:mt-10">
             <span>Scroll to explore our values</span>
             <ArrowRight className="h-4 w-4 animate-pulse text-accent" />
           </div>
@@ -354,91 +382,18 @@ function ValuesShowcaseDesktop() {
   );
 }
 
-function ValuesShowcaseMobile() {
-  const [active, setActive] = useState<number | null>(null);
-
-  return (
-    <StaggerReveal stagger={0.07} className="mt-12 flex flex-col gap-2.5">
-      {VALUES.map((v, i) => {
-        const isActive = i === active;
-        const Icon = v.icon;
-        return (
-          <motion.button
-            key={v.title}
-            type="button"
-            variants={revealIn}
-            custom={i}
-            aria-expanded={isActive}
-            onClick={() => setActive(isActive ? null : i)}
-            whileTap={{ scale: 0.985 }}
-            className={cn(
-              "relative overflow-hidden rounded-card border text-left outline-none focus-visible:ring-2 focus-visible:ring-primary",
-              isActive ? "border-primary/25 bg-surface shadow-lg" : "border-border bg-surface/80"
-            )}
-            style={{
-              boxShadow: isActive ? `0 20px 48px -28px ${v.tint}` : undefined,
-            }}
-          >
-            <span
-              aria-hidden
-              className="pointer-events-none absolute inset-0 transition-opacity duration-300"
-              style={{
-                opacity: isActive ? 1 : 0,
-                background: `linear-gradient(150deg, ${v.tint}20, transparent 70%)`,
-              }}
-            />
-            <div className="relative flex items-center gap-3 p-4">
-              <span
-                className="grid h-10 w-10 shrink-0 place-items-center rounded-xl text-white"
-                style={{
-                  backgroundImage: `linear-gradient(135deg, ${v.tint}, color-mix(in srgb, ${v.tint} 55%, #000))`,
-                }}
-              >
-                <Icon className="h-5 w-5" />
-              </span>
-              <span className="flex-1 font-display text-base font-semibold text-foreground">{v.title}</span>
-              <motion.span
-                animate={{ rotate: isActive ? 180 : 0 }}
-                className="text-muted"
-              >
-                ▾
-              </motion.span>
-            </div>
-            <AnimatePresence initial={false}>
-              {isActive && (
-                <motion.div
-                  initial={{ height: 0, opacity: 0 }}
-                  animate={{ height: "auto", opacity: 1 }}
-                  exit={{ height: 0, opacity: 0 }}
-                  transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
-                  className="overflow-hidden"
-                >
-                  <p className="px-4 pb-4 text-sm leading-relaxed text-muted">{v.body}</p>
-                </motion.div>
-              )}
-            </AnimatePresence>
-          </motion.button>
-        );
-      })}
-    </StaggerReveal>
-  );
-}
-
 /* ---------------------------------------------------------------------------
-   Team — editorial portrait cards. Entrance + a continuous parallax drift are
-   driven by scroll position (works on touch), and on pointer devices the card
-   also tilts in 3D with a cursor-tracked glare.
+   Team — editorial portrait cards with scroll parallax + 3D tilt on desktop.
 --------------------------------------------------------------------------- */
 function TeamTilt({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
   const reduce = useReducedMotion();
-  const mobile = useIsMobile();
   const cardRef = useRef<HTMLDivElement>(null);
 
   const { scrollYProgress } = useScroll({
     target: cardRef,
     offset: ["start end", "end start"],
   });
-  const depth = i % 3 === 1 ? 72 : 46;
+  const depth = i % 3 === 1 ? 48 : 32;
   const parallaxY = useSpring(useTransform(scrollYProgress, [0, 1], [depth, -depth]), {
     stiffness: 120,
     damping: 30,
@@ -453,7 +408,7 @@ function TeamTilt({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
   const glare = useMotionTemplate`radial-gradient(220px circle at ${glareX} ${glareY}, rgba(255,255,255,0.4), transparent 60%)`;
 
   function onMove(e: ReactMouseEvent<HTMLDivElement>) {
-    if (reduce || mobile) return;
+    if (reduce) return;
     const r = e.currentTarget.getBoundingClientRect();
     mx.set((e.clientX - r.left) / r.width - 0.5);
     my.set((e.clientY - r.top) / r.height - 0.5);
@@ -469,14 +424,14 @@ function TeamTilt({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
         ref={cardRef}
         onMouseMove={onMove}
         onMouseLeave={onLeave}
-        whileTap={mobile ? { scale: 0.97 } : undefined}
+        whileTap={{ scale: 0.97 }}
         style={{
-          rotateX: mobile ? 0 : rotateX,
-          rotateY: mobile ? 0 : rotateY,
+          rotateX: reduce ? 0 : rotateX,
+          rotateY: reduce ? 0 : rotateY,
           transformPerspective: 900,
-          y: reduce || mobile ? undefined : parallaxY,
+          y: reduce ? undefined : parallaxY,
         }}
-        className="relative aspect-[4/5] overflow-hidden rounded-3xl shadow-xl ring-1 ring-border [transform-style:preserve-3d]"
+        className="relative aspect-[4/5] overflow-hidden rounded-3xl shadow-xl ring-1 ring-border [transform-style:preserve-3d] md:[transform-style:preserve-3d]"
       >
         <span
           className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-white"
@@ -778,13 +733,13 @@ function MissionStoryMobile() {
           <span className="text-gradient-brand">focus back.</span>
         </h2>
       </ScrollReveal>
-      <StaggerReveal stagger={0.12} className="mt-10 space-y-6">
+      <div className="mt-10 space-y-8">
         {MISSION_PARAS.map((text, i) => (
-          <motion.p key={i} variants={revealUp} className="text-lg leading-relaxed text-muted">
-            {text}
-          </motion.p>
+          <ScrollReveal key={i} variants={i % 2 === 0 ? revealFromLeft : revealFromRight} custom={i * 0.15}>
+            <p className="text-lg leading-relaxed text-muted">{text}</p>
+          </ScrollReveal>
         ))}
-      </StaggerReveal>
+      </div>
     </Container>
   );
 }
@@ -870,9 +825,9 @@ function StatsBandMobile() {
           transition={{ duration: 0.9, ease: [0.16, 1, 0.3, 1] }}
           className="pointer-events-none absolute inset-x-0 top-0 h-0.5 origin-left bg-gradient-to-r from-primary via-accent to-primary shadow-[0_0_16px_2px_var(--primary)]"
         />
-        <StaggerReveal stagger={0.1} className="grid grid-cols-2 sm:grid-cols-4">
+        <div className="grid grid-cols-2 sm:grid-cols-4">
           {STATS.map((s, i) => (
-            <motion.div
+            <ScrollReveal
               key={s.label}
               variants={revealIn}
               custom={i}
@@ -882,9 +837,9 @@ function StatsBandMobile() {
                 {s.plain ? s.plain : <Counter value={s.value} suffix={s.suffix} />}
               </div>
               <div className="mt-1.5 text-sm text-muted">{s.label}</div>
-            </motion.div>
+            </ScrollReveal>
           ))}
-        </StaggerReveal>
+        </div>
       </div>
     </Container>
   );
@@ -1171,30 +1126,16 @@ function ValuesSection() {
 
   return (
     <>
-      <div className="md:hidden">
-        <Container className="scroll-mt-28 py-20 sm:py-28">
+      <div ref={headingRef}>
+        <Container className="scroll-mt-28 pt-20 sm:pt-28">
           <SectionHeading eyebrow="Our values" title="What we care about" />
-          <ScrollRevealOnce
-            from={{ scaleX: 0 }}
-            to={{ scaleX: 1 }}
-            transition={{ duration: 0.8, ease: [0.16, 1, 0.3, 1] }}
+          <motion.div
+            style={{ scaleX: bar }}
             className="mx-auto mt-8 h-0.5 max-w-xs origin-left rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_var(--primary)]"
           />
-          <ValuesShowcaseMobile />
         </Container>
       </div>
-      <div className="hidden md:block">
-        <div ref={headingRef}>
-          <Container className="scroll-mt-28 pt-20 sm:pt-28">
-            <SectionHeading eyebrow="Our values" title="What we care about" />
-            <motion.div
-              style={{ scaleX: bar }}
-              className="mx-auto mt-8 h-0.5 max-w-xs origin-left rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_var(--primary)]"
-            />
-          </Container>
-        </div>
-        <ValuesShowcaseDesktop />
-      </div>
+      <ValuesShowcaseScroll />
     </>
   );
 }
@@ -1290,9 +1231,9 @@ export function About() {
             subtitle="We're a small, senior team that ships fast and sweats the details. Come help us give millions of people their focus back."
           />
 
-          <StaggerReveal stagger={0.08} className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
+          <div className="mt-14 grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
             {PERKS.map((p, i) => (
-              <motion.div
+              <ScrollReveal
                 key={p.title}
                 variants={revealIn}
                 custom={i}
@@ -1301,22 +1242,20 @@ export function About() {
                 <IconTile icon={p.icon} size="sm" />
                 <h3 className="mt-4 text-sm font-semibold text-foreground">{p.title}</h3>
                 <p className="mt-1 text-sm leading-relaxed text-muted">{p.body}</p>
-              </motion.div>
+              </ScrollReveal>
             ))}
-          </StaggerReveal>
+          </div>
 
-          <StaggerReveal stagger={0.06} className="mx-auto mt-10 max-w-3xl overflow-hidden rounded-card border border-border bg-surface">
+          <div className="mx-auto mt-10 max-w-3xl overflow-hidden rounded-card border border-border bg-surface">
             <div className="border-b border-border px-5 py-3 text-[11px] font-semibold uppercase tracking-[0.18em] text-muted">
               {ROLES.length} open roles
             </div>
             {ROLES.map((r, i) => (
-              <motion.a
-                key={r.title}
-                variants={revealUp}
-                custom={i}
-                href="/contact"
-                className="group flex items-center gap-4 border-b border-border px-5 py-4 transition-colors last:border-0 hover:bg-surface-2/60"
-              >
+              <ScrollReveal key={r.title} variants={revealUp} custom={i}>
+                <a
+                  href="/contact"
+                  className="group flex items-center gap-4 border-b border-border px-5 py-4 transition-colors last:border-0 hover:bg-surface-2/60"
+                >
                 <div className="min-w-0 flex-1">
                   <div className="font-medium text-foreground">{r.title}</div>
                   <div className="mt-0.5 text-xs text-muted">
@@ -1327,9 +1266,10 @@ export function About() {
                   Apply
                 </span>
                 <ArrowRight className="h-4 w-4 shrink-0 text-muted transition-all group-hover:translate-x-0.5 group-hover:text-primary" />
-              </motion.a>
+                </a>
+              </ScrollReveal>
             ))}
-          </StaggerReveal>
+          </div>
 
           <div className="mt-8 flex justify-center">
             <Button href="/contact" variant="secondary">
