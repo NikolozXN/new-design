@@ -1,9 +1,10 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   motion,
   useScroll,
+  useSpring,
   useTransform,
   useReducedMotion,
 } from "framer-motion";
@@ -23,6 +24,8 @@ import { Scramble } from "@/components/ui/scramble";
 import { IconTile } from "@/components/ui/icon-tile";
 import { FeatureArt } from "@/components/ui/feature-art";
 import { cn } from "@/lib/utils";
+
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 type Feature = {
   id: string;
@@ -87,7 +90,6 @@ function Panel({ f }: { f: Feature }) {
   return (
     <SpotlightCard className="h-full">
       <div className="flex h-full flex-col p-6">
-        {/* Mini illustration */}
         <div className="relative aspect-[16/9] w-full overflow-hidden rounded-2xl border border-border bg-surface-2/50">
           <FeatureArt id={f.id} />
           <span className="absolute right-3 top-2 font-display text-4xl font-bold text-outline-muted">
@@ -146,7 +148,7 @@ function IntroPanel({ pinned = false }: { pinned?: boolean }) {
   );
 }
 
-/** Mobile / reduced-motion fallback: a normal responsive grid. */
+/** Mobile / reduced-motion: normal responsive grid. */
 function FeaturesGrid() {
   return (
     <section id="features" className="py-20 sm:py-28">
@@ -164,8 +166,7 @@ function FeaturesGrid() {
   );
 }
 
-/** Desktop: horizontal scroll-pinned showcase. Its scroll ref is always
- *  attached because this component only mounts when pinning is active. */
+/** Desktop only: horizontal scroll-pinned showcase. */
 function FeaturesPinned() {
   const sectionRef = useRef<HTMLDivElement>(null);
   const trackRef = useRef<HTMLDivElement>(null);
@@ -173,18 +174,28 @@ function FeaturesPinned() {
   const [vh, setVh] = useState(0);
 
   const { scrollYProgress } = useScroll({ target: sectionRef });
-  const x = useTransform(scrollYProgress, [0, 1], [0, -distance]);
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 32, restDelta: 0.001 });
+  const x = useTransform(progress, [0, 1], [0, -distance]);
+  const fillWidth = useTransform(progress, [0, 1], ["0%", "100%"]);
 
-  useEffect(() => {
+  useIsoLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
     const measure = () => {
-      const track = trackRef.current;
-      if (!track) return;
       setDistance(Math.max(0, track.scrollWidth - window.innerWidth + 32));
       setVh(window.innerHeight);
     };
     measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(track);
     window.addEventListener("resize", measure);
-    return () => window.removeEventListener("resize", measure);
+    if (typeof document !== "undefined" && document.fonts?.ready) {
+      document.fonts.ready.then(measure).catch(() => {});
+    }
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
   }, []);
 
   return (
@@ -192,20 +203,29 @@ function FeaturesPinned() {
       id="features"
       ref={sectionRef}
       style={{ height: vh ? distance + vh : undefined }}
-      className="relative"
+      className="relative hidden md:block"
     >
-      <div className="sticky top-0 flex h-screen items-center overflow-hidden">
+      <div className="sticky top-0 flex h-[100dvh] items-center overflow-hidden pb-12 pt-24 sm:pt-28">
         <motion.div
           ref={trackRef}
           style={{ x }}
-          className="flex items-stretch gap-6 px-6 lg:px-8"
+          className="flex h-full max-h-[620px] items-stretch gap-6 px-6 lg:px-8"
         >
           <IntroPanel pinned />
-          {FEATURES.map((f) => (
-            <div key={f.num} className="h-[32rem] w-[82vw] shrink-0 sm:w-[27rem]">
-              <Panel f={f} />
-            </div>
-          ))}
+          <div className="relative flex h-full items-stretch">
+            <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
+            <motion.div
+              style={{ width: fillWidth }}
+              className="pointer-events-none absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_2px_var(--primary)]"
+            />
+            {FEATURES.map((f) => (
+              <div key={f.num} className="flex h-full w-[82vw] shrink-0 items-stretch sm:w-[27rem]">
+                <div className="h-[32rem] w-full">
+                  <Panel f={f} />
+                </div>
+              </div>
+            ))}
+          </div>
           <div aria-hidden className="w-2 shrink-0" />
         </motion.div>
       </div>
@@ -215,16 +235,14 @@ function FeaturesPinned() {
 
 export function Features() {
   const reduce = useReducedMotion();
-  // Start with the grid so SSR + first client paint match; upgrade to the
-  // pinned horizontal showcase after mount on every device (mobile included).
-  // Only users who request reduced motion keep the static grid.
-  const [pinned, setPinned] = useState(false);
+  if (reduce) return <FeaturesGrid />;
 
-  useEffect(() => {
-    // One-time client gate: enable the pinned showcase unless reduced motion.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setPinned(!reduce);
-  }, [reduce]);
-
-  return pinned ? <FeaturesPinned /> : <FeaturesGrid />;
+  return (
+    <>
+      <div className="md:hidden">
+        <FeaturesGrid />
+      </div>
+      <FeaturesPinned />
+    </>
+  );
 }
