@@ -1,15 +1,15 @@
 "use client";
 
-import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import {
   motion,
+  AnimatePresence,
   useScroll,
   useSpring,
   useTransform,
   useMotionValue,
   useMotionTemplate,
   useReducedMotion,
-  type MotionValue,
 } from "framer-motion";
 import {
   Sparkles,
@@ -29,18 +29,14 @@ import {
 import { Container } from "@/components/ui/container";
 import { PageHero } from "@/components/ui/page-hero";
 import { SectionHeading } from "@/components/ui/section-heading";
-import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { IconTile } from "@/components/ui/icon-tile";
 import { Counter } from "@/components/ui/counter";
 import { Button } from "@/components/ui/button";
 import { Magnetic } from "@/components/ui/magnetic";
 import { Aurora } from "@/components/ui/aurora";
 import { Marquee } from "@/components/ui/marquee";
-import { Scramble } from "@/components/ui/scramble";
 import { EASE, fadeUp, inView, scaleUp, staggerContainer } from "@/lib/motion";
 import { cn } from "@/lib/utils";
-
-const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 const BACKERS = ["Sequoia", "Accel", "Y Combinator", "Lightspeed", "First Round"];
 
@@ -96,118 +92,159 @@ function initials(name: string) {
 }
 
 /* ---------------------------------------------------------------------------
-   Values — premium spotlight cards. Desktop: 3×2 grid with scroll stagger.
-   Mobile: horizontal snap carousel (full cards, not collapsed accordion strips).
+   Values — an interactive expanding strip. Hover (or tap) a panel and it
+   unfurls while its neighbours fold away. One living object, not six cards.
+   Panels rise + uncloak on scroll (staggered); flex-grow is CSS-transitioned
+   so it can coexist with the entrance animation.
 --------------------------------------------------------------------------- */
-const valueReveal = {
-  hidden: { opacity: 0, y: 40, scale: 0.94 },
+const panelReveal = {
+  hidden: { opacity: 0, y: 34, scale: 0.92, filter: "blur(8px)" },
   show: {
     opacity: 1,
     y: 0,
     scale: 1,
-    transition: { duration: 0.65, ease: [0.16, 1, 0.3, 1] as const },
+    filter: "blur(0px)",
+    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
   },
 };
 
-function ValueCard({ v, i }: { v: (typeof VALUES)[number]; i: number }) {
-  const Icon = v.icon;
+function ValuesShowcase() {
+  const [active, setActive] = useState(0);
+
   return (
     <motion.div
-      variants={valueReveal}
+      variants={staggerContainer(0.09)}
       initial="hidden"
       whileInView="show"
       viewport={inView}
-      className="h-full"
+      className="mt-12 flex h-[34rem] flex-col gap-2.5 sm:mt-14 md:h-[27rem] md:flex-row md:gap-3"
     >
-      <SpotlightCard className="group h-full">
-        <div className="relative h-full overflow-hidden p-6 sm:p-7">
-          <span
-            aria-hidden
-            className="pointer-events-none absolute inset-x-0 top-0 h-[3px] origin-left scale-x-0 transition-transform duration-500 group-hover:scale-x-100"
-            style={{ background: `linear-gradient(90deg, ${v.tint}, transparent)` }}
-          />
-          <span
-            aria-hidden
-            className="pointer-events-none absolute -left-8 -top-8 h-32 w-32 rounded-full opacity-0 blur-3xl transition-opacity duration-500 group-hover:opacity-100"
-            style={{ background: v.tint }}
-          />
-          <span className="pointer-events-none absolute right-4 top-3 font-display text-5xl font-bold leading-none text-foreground/[0.05]">
-            {String(i + 1).padStart(2, "0")}
-          </span>
-          <span
-            className="grid h-12 w-12 place-items-center rounded-xl text-white shadow-lg transition-transform duration-300 group-hover:scale-110 group-hover:-rotate-3"
+      {VALUES.map((v, i) => {
+        const isActive = i === active;
+        const Icon = v.icon;
+        return (
+          <motion.button
+            key={v.title}
+            type="button"
+            variants={panelReveal}
+            aria-expanded={isActive}
+            onMouseEnter={() => setActive(i)}
+            onFocus={() => setActive(i)}
+            onClick={() => setActive(i)}
+            className="group relative min-h-0 basis-0 overflow-hidden rounded-card border border-border bg-surface text-left outline-none focus-visible:ring-2 focus-visible:ring-primary"
             style={{
-              backgroundImage: `linear-gradient(135deg, ${v.tint}, color-mix(in srgb, ${v.tint} 50%, #000))`,
-              boxShadow: `0 12px 28px -12px ${v.tint}`,
+              flexGrow: isActive ? 3.4 : 1,
+              transition: "flex-grow 0.5s cubic-bezier(0.16,1,0.3,1)",
+              boxShadow: isActive ? `0 28px 60px -30px ${v.tint}` : undefined,
             }}
           >
-            <Icon className="h-5 w-5" />
-          </span>
-          <h3 className="mt-5 font-display text-xl font-semibold tracking-tight text-foreground">
-            {v.title}
-          </h3>
-          <p className="mt-2.5 text-sm leading-relaxed text-muted">{v.body}</p>
-        </div>
-      </SpotlightCard>
+            <motion.span
+              aria-hidden
+              animate={{ opacity: isActive ? 1 : 0 }}
+              transition={{ duration: 0.4 }}
+              className="pointer-events-none absolute inset-0"
+              style={{ background: `linear-gradient(150deg, ${v.tint}26, transparent 65%)` }}
+            />
+            <motion.span
+              aria-hidden
+              animate={{ scaleX: isActive ? 1 : 0 }}
+              transition={{ duration: 0.4, ease: [0.16, 1, 0.3, 1] }}
+              className="absolute inset-x-0 top-0 h-1 origin-left"
+              style={{ background: `linear-gradient(90deg, ${v.tint}, transparent)` }}
+            />
+            <span className="pointer-events-none absolute right-4 top-2 font-display text-5xl font-bold leading-none text-foreground/[0.05]">
+              {String(i + 1).padStart(2, "0")}
+            </span>
+
+            <div className="relative flex h-full w-full flex-col p-4 sm:p-5">
+              <motion.span
+                animate={{ scale: isActive ? 1.06 : 1 }}
+                transition={{ type: "spring", stiffness: 300, damping: 16 }}
+                className="grid h-11 w-11 shrink-0 place-items-center rounded-xl text-white shadow-lg"
+                style={{
+                  backgroundImage: `linear-gradient(135deg, ${v.tint}, color-mix(in srgb, ${v.tint} 55%, #000))`,
+                  boxShadow: `0 10px 24px -10px ${v.tint}`,
+                }}
+              >
+                <Icon className="h-5 w-5" />
+              </motion.span>
+
+              {/* vertical label shown only on collapsed desktop panels */}
+              {!isActive && (
+                <span
+                  className="absolute bottom-5 left-1/2 hidden whitespace-nowrap font-display text-base font-semibold tracking-tight text-foreground/80 [writing-mode:vertical-rl] md:block"
+                  style={{ transform: "translateX(-50%) rotate(180deg)" }}
+                >
+                  {v.title}
+                </span>
+              )}
+
+              <div className="mt-auto min-w-0">
+                <h3
+                  className={cn(
+                    "font-display text-lg font-semibold tracking-tight text-foreground sm:text-xl",
+                    isActive ? "md:block" : "md:hidden"
+                  )}
+                >
+                  {v.title}
+                </h3>
+                <AnimatePresence initial={false}>
+                  {isActive && (
+                    <motion.div
+                      initial={{ opacity: 0, height: 0 }}
+                      animate={{ opacity: 1, height: "auto" }}
+                      exit={{ opacity: 0, height: 0 }}
+                      transition={{ duration: 0.35, ease: [0.16, 1, 0.3, 1] }}
+                      className="overflow-hidden"
+                    >
+                      <p className="mt-2 max-w-md text-sm leading-relaxed text-muted">{v.body}</p>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
+            </div>
+          </motion.button>
+        );
+      })}
     </motion.div>
   );
 }
 
-function ValuesSection() {
-  return (
-    <section className="relative overflow-hidden py-16 sm:py-24">
-      <Aurora className="opacity-35" />
-      <Container className="relative">
-        <SectionHeading eyebrow="Our values" title="What we care about" />
-
-        {/* Mobile — swipeable snap carousel */}
-        <div className="mt-12 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-2 -mx-4 px-4 [scrollbar-width:none] md:hidden [&::-webkit-scrollbar]:hidden">
-          {VALUES.map((v, i) => (
-            <div key={v.title} className="w-[88vw] max-w-sm shrink-0 snap-center">
-              <ValueCard v={v} i={i} />
-            </div>
-          ))}
-        </div>
-
-        {/* Desktop — staggered grid */}
-        <motion.div
-          variants={staggerContainer(0.08)}
-          initial="hidden"
-          whileInView="show"
-          viewport={inView}
-          className="mt-14 hidden gap-5 md:grid md:grid-cols-2 lg:grid-cols-3"
-        >
-          {VALUES.map((v, i) => (
-            <ValueCard key={v.title} v={v} i={i} />
-          ))}
-        </motion.div>
-      </Container>
-    </section>
-  );
-}
-
 /* ---------------------------------------------------------------------------
-   Team — editorial portrait wall with scroll reveal + 3D tilt on desktop.
+   Team — editorial portrait cards. Entrance + a continuous parallax drift are
+   driven by scroll position (works on touch), and on pointer devices the card
+   also tilts in 3D with a cursor-tracked glare.
 --------------------------------------------------------------------------- */
-const teamReveal = {
-  hidden: { opacity: 0, y: 48, clipPath: "inset(12% 0% 12% 0% round 28px)" },
-  show: {
-    opacity: 1,
-    y: 0,
-    clipPath: "inset(0% 0% 0% 0% round 28px)",
-    transition: { duration: 0.75, ease: [0.16, 1, 0.3, 1] as const },
-  },
-};
-
-function TeamPortrait({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
+function TeamTilt({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
   const reduce = useReducedMotion();
+  const cardRef = useRef<HTMLDivElement>(null);
+
+  // Scroll-linked entrance + parallax (the "cool" motion that also plays on mobile)
+  const { scrollYProgress } = useScroll({
+    target: cardRef,
+    offset: ["start end", "end start"],
+  });
+  const depth = i % 3 === 1 ? 72 : 46;
+  const y = useSpring(useTransform(scrollYProgress, [0, 1], [depth, -depth]), {
+    stiffness: 120,
+    damping: 30,
+  });
+  const opacity = useTransform(scrollYProgress, [0, 0.16], [0, 1]);
+  const scale = useSpring(useTransform(scrollYProgress, [0, 0.2], [0.85, 1]), {
+    stiffness: 140,
+    damping: 26,
+  });
+  const blurN = useTransform(scrollYProgress, [0, 0.18], [12, 0]);
+  const filter = useMotionTemplate`blur(${blurN}px)`;
+
+  // Pointer-tracked 3D tilt (desktop)
   const mx = useMotionValue(0);
   const my = useMotionValue(0);
-  const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [8, -8]), { stiffness: 200, damping: 20 });
-  const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-10, 10]), { stiffness: 200, damping: 20 });
-  const glareX = useTransform(mx, [-0.5, 0.5], ["20%", "80%"]);
-  const glareY = useTransform(my, [-0.5, 0.5], ["20%", "80%"]);
-  const glare = useMotionTemplate`radial-gradient(240px circle at ${glareX} ${glareY}, rgba(255,255,255,0.35), transparent 65%)`;
+  const rotateX = useSpring(useTransform(my, [-0.5, 0.5], [9, -9]), { stiffness: 200, damping: 18 });
+  const rotateY = useSpring(useTransform(mx, [-0.5, 0.5], [-12, 12]), { stiffness: 200, damping: 18 });
+  const glareX = useTransform(mx, [-0.5, 0.5], ["18%", "82%"]);
+  const glareY = useTransform(my, [-0.5, 0.5], ["18%", "82%"]);
+  const glare = useMotionTemplate`radial-gradient(220px circle at ${glareX} ${glareY}, rgba(255,255,255,0.4), transparent 60%)`;
 
   function onMove(e: ReactMouseEvent<HTMLDivElement>) {
     if (reduce) return;
@@ -221,12 +258,16 @@ function TeamPortrait({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
   }
 
   return (
-    <motion.div variants={teamReveal} className={cn("group", i % 3 === 1 && "lg:mt-12")}>
+    <motion.div
+      ref={cardRef}
+      style={reduce ? undefined : { y, opacity, scale, filter }}
+      className={cn("group", i % 3 === 1 && "sm:mt-10")}
+    >
       <motion.div
         onMouseMove={onMove}
         onMouseLeave={onLeave}
-        style={{ rotateX, rotateY, transformPerspective: 1000 }}
-        className="relative aspect-[3/4] overflow-hidden rounded-3xl shadow-2xl ring-1 ring-border [transform-style:preserve-3d]"
+        style={{ rotateX, rotateY, transformPerspective: 900 }}
+        className="relative aspect-[4/5] overflow-hidden rounded-3xl shadow-xl ring-1 ring-border [transform-style:preserve-3d]"
       >
         <span
           className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-white"
@@ -242,115 +283,60 @@ function TeamPortrait({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
           onError={(e) => {
             e.currentTarget.style.display = "none";
           }}
-          className="absolute inset-0 h-full w-full object-cover transition-[filter,transform] duration-700 group-hover:scale-105 group-hover:grayscale-0 grayscale-[25%]"
+          className="absolute inset-0 h-full w-full object-cover grayscale-[35%] transition-[filter] duration-500 group-hover:grayscale-0"
+        />
+        <span
+          aria-hidden
+          className="pointer-events-none absolute inset-0 opacity-50 mix-blend-soft-light transition-opacity duration-500 group-hover:opacity-0"
+          style={{ backgroundImage: `linear-gradient(150deg, ${m.from}, ${m.to})` }}
         />
         <motion.span
           aria-hidden
           style={{ background: glare }}
-          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-300 group-hover:opacity-100"
+          className="pointer-events-none absolute inset-0 opacity-0 transition-opacity duration-200 group-hover:opacity-100"
         />
-        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-3/5 bg-gradient-to-t from-black/90 via-black/30 to-transparent" />
-        <span className="absolute left-4 top-4 rounded-full bg-white/10 px-2 py-0.5 font-mono text-[10px] font-semibold uppercase tracking-[0.16em] text-white/80 backdrop-blur">
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/85 via-black/25 to-transparent" />
+        <span className="absolute left-4 top-4 font-mono text-[11px] font-semibold uppercase tracking-[0.18em] text-white/70">
           {String(i + 1).padStart(2, "0")}
         </span>
-        <div className="absolute inset-x-0 bottom-0 p-5">
-          <div className="font-display text-lg font-semibold text-white">{m.name}</div>
-          <div className="mt-0.5 text-sm text-white/75">{m.role}</div>
+        <span className="absolute right-3 top-3 grid h-8 w-8 translate-y-1 place-items-center rounded-full bg-white/15 text-white opacity-0 backdrop-blur transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+          <ArrowUpRight className="h-4 w-4" />
+        </span>
+        <div className="absolute inset-x-0 bottom-0 p-4" style={{ transform: "translateZ(45px)" }}>
+          <div className="font-display text-base font-semibold text-white">{m.name}</div>
+          <div className="h-4 overflow-hidden">
+            <div className="translate-y-5 text-xs text-white/75 opacity-0 transition-all duration-300 group-hover:translate-y-0 group-hover:opacity-100">
+              {m.role}
+            </div>
+          </div>
         </div>
       </motion.div>
     </motion.div>
   );
 }
 
-function TeamSection() {
-  return (
-    <section className="relative overflow-hidden pb-24 sm:pb-32">
-      <Aurora className="opacity-30" />
-      <Container className="relative">
-        <SectionHeading
-          eyebrow="The team"
-          title="The people behind Flowly"
-          subtitle="A senior team from Linear, Notion, Stripe, and Figma — obsessed with the craft of great software."
-        />
-        <motion.div
-          variants={staggerContainer(0.1)}
-          initial="hidden"
-          whileInView="show"
-          viewport={inView}
-          className="mt-14 grid grid-cols-1 gap-6 sm:grid-cols-2 sm:gap-8 lg:grid-cols-3"
-        >
-          {TEAM.map((m, i) => (
-            <TeamPortrait key={m.name} m={m} i={i} />
-          ))}
-        </motion.div>
-      </Container>
-    </section>
-  );
-}
-
 /* ---------------------------------------------------------------------------
-   Milestones — desktop: horizontal scroll-pinned journey (the signature anim).
-   Mobile: vertical scroll-linked timeline. Reduced motion: static list.
+   Milestones — a scroll-linked timeline that lives in NORMAL page flow: no
+   pinning, no reserved viewport height, nothing to "load late". The rail fills
+   as you scroll, the nodes ignite, and each entry rises in. Centred &
+   alternating on desktop, a left rail on phones. Content never drops below
+   ~45% opacity, so it's always visible even before hydration.
 --------------------------------------------------------------------------- */
-
-function estimateMilestoneDistance() {
-  if (typeof window === "undefined") return 4200;
-  const intro = window.innerWidth * 0.84;
-  const stations = MILESTONES.length * (window.innerWidth < 640 ? window.innerWidth * 0.84 : 416);
-  return Math.max(0, intro + stations - window.innerWidth + 32);
-}
-
-function MilestoneIntro() {
-  return (
-    <div className="flex h-full w-[84vw] shrink-0 flex-col justify-center sm:w-[30rem]">
-      <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-surface/60 px-3.5 py-1.5 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
-        <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_2px_var(--accent)]" />
-        <Scramble text="Milestones" />
-      </span>
-      <h2 className="mt-5 font-display text-4xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-6xl">
-        How we{" "}
-        <span className="text-gradient-brand">got here</span>
-      </h2>
-      <p className="mt-5 max-w-sm text-lg text-muted">
-        From two frustrated builders to 12,000+ teams. Scroll sideways to travel through the story.
-      </p>
-      <div className="mt-8 flex items-center gap-2 text-sm text-muted">
-        <span>Scroll</span>
-        <ArrowRight className="h-4 w-4 animate-pulse text-accent" />
-      </div>
-    </div>
-  );
-}
-
-function Station({
-  m,
-  i,
-  n,
-  progress,
-}: {
-  m: (typeof MILESTONES)[number];
-  i: number;
-  n: number;
-  progress: MotionValue<number>;
-}) {
-  const above = i % 2 === 0;
-  const slot = (i + 1) / (n + 1);
-  const nodeScale = useTransform(progress, [slot - 0.1, slot], [0.3, 1]);
-  const glow = useTransform(progress, [slot - 0.1, slot, slot + 0.18], [0, 1, 0.55]);
-  const cardOpacity = useTransform(progress, [slot - 0.16, slot - 0.02], [0.55, 1]);
-  const cardY = useTransform(progress, [slot - 0.16, slot - 0.02], [above ? -28 : 28, 0]);
-  const yearY = useTransform(progress, [slot - 0.16, slot - 0.02], [above ? -56 : 56, 0]);
-  const yearOpacity = useTransform(progress, [slot - 0.12, slot], [0.4, 1]);
+function MilestoneRow({ m, i }: { m: (typeof MILESTONES)[number]; i: number }) {
+  const left = i % 2 === 0; // which side of the centre rail (desktop only)
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.92", "start 0.45"] });
+  const opacity = useTransform(scrollYProgress, [0, 1], [0.45, 1]);
+  const y = useTransform(scrollYProgress, [0, 1], [30, 0]);
+  const dotScale = useTransform(scrollYProgress, [0, 1], [0.3, 1]);
+  const dotGlow = useTransform(scrollYProgress, [0.2, 1], [0, 1]);
 
   const card = (
-    <motion.div style={{ opacity: cardOpacity, y: cardY }} className="w-[80vw] max-w-[20rem] sm:w-[22rem]">
-      <motion.div
-        style={{ opacity: yearOpacity, y: yearY }}
-        className="font-display text-5xl font-bold leading-none tracking-tight text-gradient-brand sm:text-6xl md:text-7xl"
-      >
+    <motion.div style={{ opacity, y }} className={cn("md:max-w-sm", left && "md:ml-auto md:text-right")}>
+      <span className="font-display text-4xl font-bold leading-none tracking-tight text-gradient-brand sm:text-5xl">
         {m.year}
-      </motion.div>
-      <div className="mt-3 rounded-card border border-border bg-surface/80 p-4 shadow-xl shadow-black/5 backdrop-blur sm:mt-4 sm:p-5 dark:shadow-black/30">
+      </span>
+      <div className="mt-2.5 rounded-card border border-border bg-surface/80 p-4 shadow-lg shadow-black/5 backdrop-blur sm:p-5 dark:shadow-black/30">
         <h3 className="font-display text-lg font-semibold text-foreground sm:text-xl">{m.title}</h3>
         <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
       </div>
@@ -358,106 +344,53 @@ function Station({
   );
 
   return (
-    <div className="grid h-full w-[84vw] shrink-0 grid-rows-[1fr_auto_1fr] sm:w-[26rem]">
-      <div className="flex items-end justify-center pb-4 sm:pb-6">{above && card}</div>
-      <div className="relative flex items-center justify-center">
-        <div
-          className={`absolute left-1/2 h-10 w-px -translate-x-1/2 bg-gradient-to-b from-primary/60 to-transparent ${
-            above ? "bottom-1/2 rotate-180" : "top-1/2"
-          }`}
-        />
-        <motion.span style={{ scale: nodeScale }} className="relative z-10 h-5 w-5">
-          <motion.span aria-hidden style={{ opacity: glow }} className="absolute -inset-2.5 rounded-full bg-primary blur-md" />
-          <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
-        </motion.span>
-      </div>
-      <div className="flex items-start justify-center pt-4 sm:pt-6">{!above && card}</div>
+    <div className="relative pb-12 pl-14 last:pb-0 md:grid md:grid-cols-2 md:gap-14 md:pl-0">
+      <motion.span
+        style={{ scale: dotScale }}
+        className="absolute left-[1.15rem] top-1.5 z-10 h-5 w-5 -translate-x-1/2 md:left-1/2"
+      >
+        <motion.span aria-hidden style={{ opacity: dotGlow }} className="absolute -inset-2 rounded-full bg-primary blur-md" />
+        <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
+      </motion.span>
+
+      {left ? (
+        <>
+          {card}
+          <div aria-hidden className="hidden md:block" />
+        </>
+      ) : (
+        <>
+          <div aria-hidden className="hidden md:block" />
+          {card}
+        </>
+      )}
     </div>
   );
 }
 
-function MilestonesPinned() {
-  const sectionRef = useRef<HTMLDivElement>(null);
-  const trackRef = useRef<HTMLDivElement>(null);
-  const [distance, setDistance] = useState(estimateMilestoneDistance);
-  const [vh, setVh] = useState(() =>
-    typeof window !== "undefined" ? window.innerHeight : 800
-  );
-
-  const { scrollYProgress } = useScroll({ target: sectionRef });
-  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 32, restDelta: 0.001 });
-  const x = useTransform(progress, [0, 1], [0, -distance]);
-  const fillWidth = useTransform(progress, [0, 1], ["0%", "100%"]);
-
-  useIsoLayoutEffect(() => {
-    const track = trackRef.current;
-    if (!track) return;
-    const measure = () => {
-      setDistance(Math.max(0, track.scrollWidth - window.innerWidth + 32));
-      setVh(window.innerHeight);
-    };
-    measure();
-    const ro = new ResizeObserver(measure);
-    ro.observe(track);
-    window.addEventListener("resize", measure);
-    if (document.fonts?.ready) document.fonts.ready.then(measure).catch(() => {});
-    return () => {
-      ro.disconnect();
-      window.removeEventListener("resize", measure);
-    };
-  }, []);
+function MilestonesTimeline() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.75", "end 0.65"] });
+  const fill = useSpring(useTransform(scrollYProgress, [0, 1], [0, 1]), {
+    stiffness: 120,
+    damping: 30,
+    restDelta: 0.001,
+  });
 
   return (
-    <section ref={sectionRef} style={{ height: distance + vh }} className="relative">
-      <div className="sticky top-0 h-[100dvh] overflow-hidden">
-        <Aurora className="opacity-50" />
-        <div className="flex h-full items-center pb-12 pt-24 sm:pt-28">
-          <motion.div
-            ref={trackRef}
-            style={{ x }}
-            className="flex h-full max-h-[620px] items-stretch gap-4 px-[8vw] will-change-transform sm:gap-8"
-          >
-            <MilestoneIntro />
-            <div className="relative flex h-full items-stretch">
-              <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
-              <motion.div
-                style={{ width: fillWidth }}
-                className="pointer-events-none absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_2px_var(--primary)]"
-              />
-              {MILESTONES.map((m, i) => (
-                <Station key={m.year} m={m} i={i} n={MILESTONES.length} progress={progress} />
-              ))}
-            </div>
-            <div aria-hidden className="w-[8vw] shrink-0" />
-          </motion.div>
-        </div>
-      </div>
-    </section>
-  );
-}
-
-/** Mobile — horizontal snap timeline (matches landing-page energy). */
-function MilestonesMobile() {
-  return (
-    <section className="relative overflow-hidden py-16">
+    <section className="relative overflow-hidden py-16 sm:py-24">
       <Aurora className="opacity-50" />
       <Container>
         <SectionHeading eyebrow="Milestones" title="How we got here" />
-        <p className="mx-auto mt-4 max-w-sm text-center text-sm text-muted md:hidden">
-          Swipe through our story →
-        </p>
-        <div className="mt-10 flex gap-4 overflow-x-auto snap-x snap-mandatory pb-4 -mx-4 px-4 [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
-          {MILESTONES.map((m) => (
-            <div
-              key={m.year}
-              className="w-[88vw] max-w-md shrink-0 snap-center rounded-card border border-border bg-surface/80 p-6 shadow-xl backdrop-blur"
-            >
-              <span className="font-display text-5xl font-bold leading-none tracking-tight text-gradient-brand">
-                {m.year}
-              </span>
-              <h3 className="mt-4 font-display text-xl font-semibold text-foreground">{m.title}</h3>
-              <p className="mt-2 text-sm leading-relaxed text-muted">{m.body}</p>
-            </div>
+        <div ref={ref} className="relative mx-auto mt-14 max-w-3xl">
+          {/* rail track + scroll-driven fill (left on mobile, centred on desktop) */}
+          <span className="absolute left-[1.15rem] top-0 h-full w-px -translate-x-1/2 bg-border md:left-1/2" />
+          <motion.span
+            style={{ scaleY: fill }}
+            className="absolute left-[1.15rem] top-0 h-full w-0.5 origin-top -translate-x-1/2 rounded-full bg-gradient-to-b from-primary to-accent shadow-[0_0_12px_2px_var(--primary)] md:left-1/2"
+          />
+          {MILESTONES.map((m, i) => (
+            <MilestoneRow key={m.year} m={m} i={i} />
           ))}
         </div>
       </Container>
@@ -489,19 +422,11 @@ function MilestonesStatic() {
 }
 
 function Milestones() {
+  // `useReducedMotion` returns null on the server and first client render, so
+  // both render the same tree (no hydration mismatch). It only swaps to the
+  // plain static list afterwards for visitors who prefer reduced motion.
   const reduce = useReducedMotion();
-  if (reduce) return <MilestonesStatic />;
-
-  return (
-    <>
-      <div className="md:hidden">
-        <MilestonesMobile />
-      </div>
-      <div className="hidden md:block">
-        <MilestonesPinned />
-      </div>
-    </>
-  );
+  return reduce ? <MilestonesStatic /> : <MilestonesTimeline />;
 }
 
 export function About() {
@@ -565,14 +490,8 @@ export function About() {
           className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border sm:grid-cols-4"
         >
           {STATS.map((s) => (
-            <motion.div
-              key={s.label}
-              variants={scaleUp}
-              whileHover={{ y: -4 }}
-              transition={{ type: "spring", stiffness: 300, damping: 22 }}
-              className="group bg-surface p-6 text-center transition-colors hover:bg-surface-2/50 sm:p-8"
-            >
-              <div className="font-display text-3xl font-bold tracking-tight text-foreground transition-colors group-hover:text-primary sm:text-5xl">
+            <motion.div key={s.label} variants={scaleUp} className="bg-surface p-6 text-center sm:p-8 transition-colors hover:bg-surface-2/50">
+              <div className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
                 {s.plain ? s.plain : <Counter value={s.value} suffix={s.suffix} />}
               </div>
               <div className="mt-1.5 text-sm text-muted">{s.label}</div>
@@ -582,9 +501,7 @@ export function About() {
       </Container>
 
       {/* Mission + story */}
-      <section className="relative overflow-hidden py-12 sm:py-20">
-        <Aurora className="opacity-25" />
-        <Container className="relative">
+      <Container className="py-12 sm:py-20">
         <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
           <motion.h2
             initial={{ opacity: 0, y: 24 }}
@@ -620,8 +537,7 @@ export function About() {
             </motion.p>
           </motion.div>
         </div>
-        </Container>
-      </section>
+      </Container>
 
       {/* Founder's note */}
       <Container className="pb-6 sm:pb-10">
@@ -686,10 +602,24 @@ export function About() {
       <Milestones />
 
       {/* Values */}
-      <ValuesSection />
+      <Container className="py-16 sm:py-24">
+        <SectionHeading eyebrow="Our values" title="What we care about" />
+        <ValuesShowcase />
+      </Container>
 
       {/* Team */}
-      <TeamSection />
+      <Container className="pb-24 sm:pb-32">
+        <SectionHeading
+          eyebrow="The team"
+          title="The people behind Flowly"
+          subtitle="A senior team from Linear, Notion, Stripe, and Figma — obsessed with the craft of great software."
+        />
+        <div className="mt-14 grid grid-cols-2 items-start gap-4 sm:grid-cols-3 sm:gap-6">
+          {TEAM.map((m, i) => (
+            <TeamTilt key={m.name} m={m} i={i} />
+          ))}
+        </div>
+      </Container>
 
       {/* Careers */}
       <section className="relative overflow-hidden border-t border-border bg-surface-2/40 py-20 sm:py-28">

@@ -10,7 +10,7 @@ export const staggerContainer = (stagger = 0.1, delay = 0): Variants => ({
   },
 });
 
-/** Child: fade + rise + de-blur reveal (premium one-shot — not scroll-linked). */
+/** Child: fade + rise + slight blur (premium reveal). */
 export const fadeUp: Variants = {
   hidden: { opacity: 0, y: 28, filter: "blur(8px)" },
   show: {

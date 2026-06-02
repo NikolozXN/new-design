@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useRef } from "react";
 import {
   motion,
   useScroll,
@@ -27,14 +27,6 @@ const STATS = [
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
-  const [parallax, setParallax] = useState(false);
-
-  useEffect(() => {
-    const ok = !reduce && window.matchMedia("(min-width: 768px)").matches;
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setParallax(ok);
-  }, [reduce]);
-
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
@@ -59,7 +51,7 @@ export function Hero() {
       <div className="grain pointer-events-none absolute inset-0 -z-10 opacity-[0.04] mix-blend-overlay" />
 
       <Container>
-        <motion.div style={parallax ? { y: textY } : undefined}>
+        <motion.div style={reduce ? undefined : { y: textY }}>
           {/* Status pill */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}
@@ -128,9 +120,9 @@ export function Hero() {
         <div className="perspective mx-auto mt-20 max-w-5xl">
           <motion.div
             style={
-              parallax
-                ? { rotateX, scale, y, transformStyle: "preserve-3d" }
-                : undefined
+              reduce
+                ? undefined
+                : { rotateX, scale, y, transformStyle: "preserve-3d" }
             }
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}

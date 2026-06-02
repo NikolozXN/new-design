@@ -85,8 +85,8 @@ export function AuthShell({
 
         <div className="flex flex-1 items-center justify-center py-12">
           <motion.div
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.6, ease: [0.16, 1, 0.3, 1] }}
             className="w-full max-w-sm"
           >

@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   motion,
   useMotionValue,
@@ -20,13 +20,13 @@ export function Cursor() {
 
   const x = useMotionValue(-100);
   const y = useMotionValue(-100);
-  const ringX = useSpring(x, { stiffness: 280, damping: 32, mass: 0.35 });
-  const ringY = useSpring(y, { stiffness: 280, damping: 32, mass: 0.35 });
-  const hoveringRef = useRef(false);
+  const ringX = useSpring(x, { stiffness: 350, damping: 28, mass: 0.4 });
+  const ringY = useSpring(y, { stiffness: 350, damping: 28, mass: 0.4 });
 
   useEffect(() => {
     const fine = window.matchMedia("(pointer: fine)").matches;
     if (!fine || reduce) return;
+    // Enable only on the client once we know the device has a fine pointer.
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setEnabled(true);
 
@@ -34,13 +34,11 @@ export function Cursor() {
       x.set(e.clientX);
       y.set(e.clientY);
       const el = e.target as HTMLElement;
-      const next = !!el.closest("a, button, [data-cursor='hover'], input, textarea");
-      if (next !== hoveringRef.current) {
-        hoveringRef.current = next;
-        setHovering(next);
-      }
+      setHovering(
+        !!el.closest("a, button, [data-cursor='hover'], input, textarea")
+      );
     };
-    window.addEventListener("mousemove", move, { passive: true });
+    window.addEventListener("mousemove", move);
     return () => window.removeEventListener("mousemove", move);
   }, [reduce, x, y]);
 

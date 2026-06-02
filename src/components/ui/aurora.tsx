@@ -23,7 +23,7 @@ export function Aurora({ className }: { className?: string }) {
   );
 }
 
-/** Fixed, full-screen film grain. */
+/** Fixed, full-screen film grain. Mount once near the page root. */
 export function GrainOverlay() {
   return (
     <div
