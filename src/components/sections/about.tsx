@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import {
   motion,
   AnimatePresence,
@@ -10,6 +10,7 @@ import {
   useMotionValue,
   useMotionTemplate,
   useReducedMotion,
+  type MotionValue,
 } from "framer-motion";
 import {
   Sparkles,
@@ -35,8 +36,11 @@ import { Button } from "@/components/ui/button";
 import { Magnetic } from "@/components/ui/magnetic";
 import { Aurora } from "@/components/ui/aurora";
 import { Marquee } from "@/components/ui/marquee";
+import { Scramble } from "@/components/ui/scramble";
 import { EASE, fadeUp, inView, scaleUp, staggerContainer } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
 
 const BACKERS = ["Sequoia", "Accel", "Y Combinator", "Lightspeed", "First Round"];
 
@@ -98,11 +102,12 @@ function initials(name: string) {
    so it can coexist with the entrance animation.
 --------------------------------------------------------------------------- */
 const panelReveal = {
-  hidden: { opacity: 0, y: 34, scale: 0.92 },
+  hidden: { opacity: 0, y: 34, scale: 0.92, filter: "blur(8px)" },
   show: {
     opacity: 1,
     y: 0,
     scale: 1,
+    filter: "blur(0px)",
     transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
   },
 };
@@ -307,12 +312,154 @@ function TeamTilt({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
 }
 
 /* ---------------------------------------------------------------------------
-   Milestones — a scroll-linked timeline that lives in NORMAL page flow: no
-   pinning, no reserved viewport height, nothing to "load late". The rail fills
-   as you scroll, the nodes ignite, and each entry rises in. Centred &
-   alternating on desktop, a left rail on phones. Content never drops below
-   ~45% opacity, so it's always visible even before hydration.
+   Milestones — desktop: horizontal scroll-pinned journey (the signature anim).
+   Mobile: vertical scroll-linked timeline. Reduced motion: static list.
 --------------------------------------------------------------------------- */
+
+function estimateMilestoneDistance() {
+  if (typeof window === "undefined") return 4200;
+  const intro = window.innerWidth * 0.84;
+  const stations = MILESTONES.length * (window.innerWidth < 640 ? window.innerWidth * 0.84 : 416);
+  return Math.max(0, intro + stations - window.innerWidth + 32);
+}
+
+function MilestoneIntro() {
+  return (
+    <div className="flex h-full w-[84vw] shrink-0 flex-col justify-center sm:w-[30rem]">
+      <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-surface/60 px-3.5 py-1.5 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_2px_var(--accent)]" />
+        <Scramble text="Milestones" />
+      </span>
+      <h2 className="mt-5 font-display text-4xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-6xl">
+        How we{" "}
+        <span className="text-gradient-brand">got here</span>
+      </h2>
+      <p className="mt-5 max-w-sm text-lg text-muted">
+        From two frustrated builders to 12,000+ teams. Scroll sideways to travel through the story.
+      </p>
+      <div className="mt-8 flex items-center gap-2 text-sm text-muted">
+        <span>Scroll</span>
+        <ArrowRight className="h-4 w-4 animate-pulse text-accent" />
+      </div>
+    </div>
+  );
+}
+
+function Station({
+  m,
+  i,
+  n,
+  progress,
+}: {
+  m: (typeof MILESTONES)[number];
+  i: number;
+  n: number;
+  progress: MotionValue<number>;
+}) {
+  const above = i % 2 === 0;
+  const slot = (i + 1) / (n + 1);
+  const nodeScale = useTransform(progress, [slot - 0.1, slot], [0.3, 1]);
+  const glow = useTransform(progress, [slot - 0.1, slot, slot + 0.18], [0, 1, 0.55]);
+  const cardOpacity = useTransform(progress, [slot - 0.16, slot - 0.02], [0, 1]);
+  const cardY = useTransform(progress, [slot - 0.16, slot - 0.02], [above ? -28 : 28, 0]);
+  const yearY = useTransform(progress, [slot - 0.16, slot - 0.02], [above ? -56 : 56, 0]);
+  const yearOpacity = useTransform(progress, [slot - 0.12, slot], [0.12, 1]);
+
+  const card = (
+    <motion.div style={{ opacity: cardOpacity, y: cardY }} className="w-[80vw] max-w-[20rem] sm:w-[22rem]">
+      <motion.div
+        style={{ opacity: yearOpacity, y: yearY }}
+        className="font-display text-5xl font-bold leading-none tracking-tight text-gradient-brand sm:text-6xl md:text-7xl"
+      >
+        {m.year}
+      </motion.div>
+      <div className="mt-3 rounded-card border border-border bg-surface/80 p-4 shadow-xl shadow-black/5 backdrop-blur sm:mt-4 sm:p-5 dark:shadow-black/30">
+        <h3 className="font-display text-lg font-semibold text-foreground sm:text-xl">{m.title}</h3>
+        <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
+      </div>
+    </motion.div>
+  );
+
+  return (
+    <div className="grid h-full w-[84vw] shrink-0 grid-rows-[1fr_auto_1fr] sm:w-[26rem]">
+      <div className="flex items-end justify-center pb-4 sm:pb-6">{above && card}</div>
+      <div className="relative flex items-center justify-center">
+        <div
+          className={`absolute left-1/2 h-10 w-px -translate-x-1/2 bg-gradient-to-b from-primary/60 to-transparent ${
+            above ? "bottom-1/2 rotate-180" : "top-1/2"
+          }`}
+        />
+        <motion.span style={{ scale: nodeScale }} className="relative z-10 h-5 w-5">
+          <motion.span aria-hidden style={{ opacity: glow }} className="absolute -inset-2.5 rounded-full bg-primary blur-md" />
+          <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
+        </motion.span>
+      </div>
+      <div className="flex items-start justify-center pt-4 sm:pt-6">{!above && card}</div>
+    </div>
+  );
+}
+
+function MilestonesPinned() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [distance, setDistance] = useState(estimateMilestoneDistance);
+  const [vh, setVh] = useState(() =>
+    typeof window !== "undefined" ? window.innerHeight : 800
+  );
+
+  const { scrollYProgress } = useScroll({ target: sectionRef });
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 32, restDelta: 0.001 });
+  const x = useTransform(progress, [0, 1], [0, -distance]);
+  const fillWidth = useTransform(progress, [0, 1], ["0%", "100%"]);
+
+  useIsoLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const measure = () => {
+      setDistance(Math.max(0, track.scrollWidth - window.innerWidth + 32));
+      setVh(window.innerHeight);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(track);
+    window.addEventListener("resize", measure);
+    if (document.fonts?.ready) document.fonts.ready.then(measure).catch(() => {});
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  return (
+    <section ref={sectionRef} style={{ height: distance + vh }} className="relative">
+      <div className="sticky top-0 h-[100dvh] overflow-hidden">
+        <Aurora className="opacity-50" />
+        <div className="flex h-full items-center pb-12 pt-24 sm:pt-28">
+          <motion.div
+            ref={trackRef}
+            style={{ x }}
+            className="flex h-full max-h-[620px] items-stretch gap-4 px-[8vw] will-change-transform sm:gap-8"
+          >
+            <MilestoneIntro />
+            <div className="relative flex h-full items-stretch">
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
+              <motion.div
+                style={{ width: fillWidth }}
+                className="pointer-events-none absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_2px_var(--primary)]"
+              />
+              {MILESTONES.map((m, i) => (
+                <Station key={m.year} m={m} i={i} n={MILESTONES.length} progress={progress} />
+              ))}
+            </div>
+            <div aria-hidden className="w-[8vw] shrink-0" />
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/** Mobile: vertical scroll-linked timeline. */
 function MilestoneRow({ m, i }: { m: (typeof MILESTONES)[number]; i: number }) {
   const left = i % 2 === 0;
   const ref = useRef<HTMLDivElement>(null);
@@ -408,11 +555,19 @@ function MilestonesStatic() {
 }
 
 function Milestones() {
-  // `useReducedMotion` returns null on the server and first client render, so
-  // both render the same tree (no hydration mismatch). It only swaps to the
-  // plain static list afterwards for visitors who prefer reduced motion.
   const reduce = useReducedMotion();
-  return reduce ? <MilestonesStatic /> : <MilestonesTimeline />;
+  if (reduce) return <MilestonesStatic />;
+
+  return (
+    <>
+      <div className="md:hidden">
+        <MilestonesTimeline />
+      </div>
+      <div className="hidden md:block">
+        <MilestonesPinned />
+      </div>
+    </>
+  );
 }
 
 export function About() {

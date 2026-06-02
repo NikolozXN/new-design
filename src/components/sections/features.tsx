@@ -4,6 +4,7 @@ import { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   motion,
   useScroll,
+  useSpring,
   useTransform,
   useReducedMotion,
 } from "framer-motion";
@@ -183,8 +184,9 @@ function FeaturesPinned() {
   );
 
   const { scrollYProgress } = useScroll({ target: sectionRef });
-  const x = useTransform(scrollYProgress, [0, 1], [0, -distance]);
-  const fillWidth = useTransform(scrollYProgress, [0, 1], ["0%", "100%"]);
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 32, restDelta: 0.001 });
+  const x = useTransform(progress, [0, 1], [0, -distance]);
+  const fillWidth = useTransform(progress, [0, 1], ["0%", "100%"]);
 
   useIsoLayoutEffect(() => {
     const track = trackRef.current;

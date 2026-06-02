@@ -30,9 +30,7 @@ export function Hero() {
   const [parallax, setParallax] = useState(false);
 
   useEffect(() => {
-    const ok =
-      !reduce &&
-      window.matchMedia("(min-width: 768px) and (pointer: fine)").matches;
+    const ok = !reduce && window.matchMedia("(min-width: 768px)").matches;
     // eslint-disable-next-line react-hooks/set-state-in-effect
     setParallax(ok);
   }, [reduce]);
@@ -58,7 +56,7 @@ export function Hero() {
         <CanvasGradient className="opacity-80 dark:opacity-90" />
       </div>
       <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-40 [mask-image:radial-gradient(ellipse_70%_60%_at_50%_0%,black,transparent)]" />
-      <div className="grain pointer-events-none absolute inset-0 -z-10 hidden opacity-[0.04] mix-blend-overlay md:block" />
+      <div className="grain pointer-events-none absolute inset-0 -z-10 opacity-[0.04] mix-blend-overlay" />
 
       <Container>
         <motion.div style={parallax ? { y: textY } : undefined}>
@@ -93,8 +91,8 @@ export function Hero() {
           />
 
           <motion.p
-            initial={{ opacity: 0, y: 16 }}
-            animate={{ opacity: 1, y: 0 }}
+            initial={{ opacity: 0, y: 16, filter: "blur(6px)" }}
+            animate={{ opacity: 1, y: 0, filter: "blur(0px)" }}
             transition={{ duration: 0.7, delay: 0.6, ease: EASE }}
             className="mx-auto mt-7 max-w-xl text-center text-lg leading-relaxed text-muted sm:text-xl"
           >
@@ -138,8 +136,8 @@ export function Hero() {
             animate={{ opacity: 1 }}
             transition={{ duration: 0.9, delay: 0.5 }}
           >
-            <div className="relative md:animate-float">
-              <div className="absolute -inset-x-12 -top-12 bottom-0 -z-10 hidden rounded-[3rem] bg-gradient-to-b from-primary/30 via-accent/10 to-transparent blur-3xl md:block" />
+            <div className="relative animate-float">
+              <div className="absolute -inset-x-12 -top-12 bottom-0 -z-10 rounded-[3rem] bg-gradient-to-b from-primary/30 via-accent/10 to-transparent blur-3xl" />
               <DashboardMock />
             </div>
           </motion.div>

@@ -5,7 +5,7 @@ import { ArrowUpRight } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { Button } from "@/components/ui/button";
 import { Magnetic } from "@/components/ui/magnetic";
-import { StaticGradient } from "@/components/ui/canvas-gradient";
+import { CanvasGradient } from "@/components/ui/canvas-gradient";
 import { fadeUp, inView, staggerContainer } from "@/lib/motion";
 
 export function CTA() {
@@ -15,7 +15,7 @@ export function CTA() {
         <div className="relative overflow-hidden rounded-[2.5rem] border border-border bg-surface px-6 py-24 text-center sm:px-16">
           {/* Signature interactive gradient */}
           <div aria-hidden className="pointer-events-none absolute inset-0 -z-10 opacity-90">
-            <StaticGradient />
+            <CanvasGradient />
           </div>
           <div className="pointer-events-none absolute inset-0 -z-10 bg-grid opacity-30 [mask-image:radial-gradient(ellipse_at_center,black,transparent_75%)]" />
           <div className="grain pointer-events-none absolute inset-0 -z-10 opacity-[0.05] mix-blend-overlay" />

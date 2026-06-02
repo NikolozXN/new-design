@@ -3,15 +3,13 @@ import { Navbar } from "@/components/sections/navbar";
 import { Footer } from "@/components/sections/footer";
 import { ScrollProgress } from "@/components/ui/scroll-progress";
 import { GrainOverlay } from "@/components/ui/aurora";
+import { Cursor } from "@/components/ui/cursor";
 
-/**
- * Shared marketing chrome (scroll bar, grain, navbar, footer).
- * Custom cursor removed — mix-blend-difference over the full viewport was
- * costing a frame on every mousemove.
- */
+/** Shared marketing chrome — cursor, scroll bar, grain, navbar, footer. */
 export function SiteShell({ children }: { children: ReactNode }) {
   return (
     <>
+      <Cursor />
       <ScrollProgress />
       <GrainOverlay />
       <Navbar />

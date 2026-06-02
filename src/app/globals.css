@@ -236,13 +236,6 @@
   to { --angle: 360deg; }
 }
 
-@media (max-width: 768px) {
-  /* Huge blurred blobs + infinite transforms are a mobile GPU killer. */
-  .animate-aurora {
-    animation: none !important;
-  }
-}
-
 @media (prefers-reduced-motion: reduce) {
   html { scroll-behavior: auto; }
   *, *::before, *::after {

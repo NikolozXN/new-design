@@ -23,12 +23,12 @@ export function Aurora({ className }: { className?: string }) {
   );
 }
 
-/** Fixed, full-screen film grain. Desktop only — the mix-blend overlay is costly on mobile GPUs. */
+/** Fixed, full-screen film grain. */
 export function GrainOverlay() {
   return (
     <div
       aria-hidden
-      className="grain pointer-events-none fixed inset-0 z-[55] hidden opacity-[0.035] mix-blend-overlay dark:opacity-[0.05] md:block"
+      className="grain pointer-events-none fixed inset-0 z-[55] opacity-[0.035] mix-blend-overlay dark:opacity-[0.05]"
     />
   );
 }
