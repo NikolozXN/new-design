@@ -101,6 +101,80 @@ export function StaggerReveal({
   );
 }
 
+/** Horizontal snap rails — animates when each card is swiped into view (not vertical scroll). */
+export function HorizontalReveal({
+  children,
+  className,
+  custom = 0,
+}: {
+  children: ReactNode;
+  className?: string;
+  custom?: number;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const [visible, setVisible] = useState(false);
+
+  useEffect(() => {
+    if (reduce) {
+      setVisible(true);
+      return;
+    }
+    const el = ref.current;
+    if (!el) return;
+
+    let root: Element | null = el.parentElement;
+    while (root) {
+      const { overflowX } = getComputedStyle(root);
+      if (overflowX === "auto" || overflowX === "scroll") break;
+      root = root.parentElement;
+    }
+
+    const obs = new IntersectionObserver(
+      (entries) => {
+        entries.forEach((e) => {
+          if (e.isIntersecting && e.intersectionRatio >= 0.35) setVisible(true);
+        });
+      },
+      { root, threshold: [0.35, 0.55], rootMargin: "0px 8px" }
+    );
+    obs.observe(el);
+
+    const checkNow = () => {
+      const rect = el.getBoundingClientRect();
+      const rootRect = root?.getBoundingClientRect();
+      if (!rootRect) {
+        if (rect.left < window.innerWidth * 0.92 && rect.right > window.innerWidth * 0.08) {
+          setVisible(true);
+        }
+        return;
+      }
+      if (rect.left < rootRect.right - 24 && rect.right > rootRect.left + 24) {
+        setVisible(true);
+      }
+    };
+    checkNow();
+    root?.addEventListener("scroll", checkNow, { passive: true });
+
+    return () => {
+      obs.disconnect();
+      root?.removeEventListener("scroll", checkNow);
+    };
+  }, [reduce]);
+
+  return (
+    <motion.div
+      ref={ref}
+      className={className}
+      initial={{ opacity: 0, x: 36, scale: 0.92 }}
+      animate={visible ? { opacity: 1, x: 0, scale: 1 } : { opacity: 0, x: 36, scale: 0.92 }}
+      transition={{ duration: 0.55, ease: EASE, delay: custom * 0.06 }}
+    >
+      {children}
+    </motion.div>
+  );
+}
+
 /** Single-element reveal without variant children (opacity / transform props). */
 export function ScrollRevealOnce({
   children,

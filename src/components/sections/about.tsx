@@ -27,24 +27,25 @@ import {
   HeartHandshake,
 } from "lucide-react";
 import { Container } from "@/components/ui/container";
+import { PageHero } from "@/components/ui/page-hero";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { IconTile } from "@/components/ui/icon-tile";
 import { Counter } from "@/components/ui/counter";
 import { Button } from "@/components/ui/button";
+import { Magnetic } from "@/components/ui/magnetic";
 import { Aurora } from "@/components/ui/aurora";
 import { Marquee } from "@/components/ui/marquee";
 import { Scramble } from "@/components/ui/scramble";
 import { revealFromLeft, revealFromRight, revealIn, revealUp } from "@/lib/motion";
 import { ScrollReveal, StaggerReveal } from "@/components/ui/scroll-reveal";
 import {
-  ValuesMobileCinema,
+  ValuesMobileList,
   StatsMobileRail,
   MissionMobileEditorial,
   TeamMobileFilmstrip,
-  MilestonesMobileTape,
-  MobileScrubBlock,
+  MilestonesMobileTimeline,
+  MobileRevealBlock,
 } from "@/components/sections/about-mobile";
-import { AboutHero, AboutScrollWash, OrbitRings } from "@/components/sections/about-fx";
 import { cn } from "@/lib/utils";
 
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -155,12 +156,6 @@ function ValuesPanelContent({
       )}
       style={{ boxShadow: `0 32px 64px -32px ${v.tint}55` }}
     >
-      <span
-        aria-hidden
-        className="pointer-events-none absolute -right-8 top-1/2 h-32 w-32 -translate-y-1/2 opacity-20"
-      >
-        <OrbitRings className="inset-0" rings={2} />
-      </span>
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-80"
@@ -528,7 +523,7 @@ function MilestonesPinned() {
 
 /* MOBILE: horizontal film tape timeline */
 function MilestonesMobile() {
-  return <MilestonesMobileTape milestones={MILESTONES_MOBILE} />;
+  return <MilestonesMobileTimeline milestones={MILESTONES_MOBILE} />;
 }
 
 function MilestonesStatic() {
@@ -809,7 +804,7 @@ function TeamPinned() {
 function FounderNoteMobile() {
   return (
     <Container className="pb-6 sm:pb-10 md:hidden">
-      <MobileScrubBlock tall={false}>
+      <MobileRevealBlock>
         <figure className="relative mx-auto max-w-3xl overflow-hidden rounded-[1.75rem] border border-border bg-surface p-8 text-center shadow-2xl shadow-black/5 dark:shadow-black/30">
           <span aria-hidden className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/15 blur-3xl" />
           <Quote className="mx-auto h-8 w-8 text-primary/70" />
@@ -845,7 +840,7 @@ function FounderNoteMobile() {
             </div>
           </figcaption>
         </figure>
-      </MobileScrubBlock>
+      </MobileRevealBlock>
     </Container>
   );
 }
@@ -935,13 +930,9 @@ function ValuesSection() {
       {/* Mobile — cinematic full-screen chapters */}
       <div className="lg:hidden">
         <Container className="scroll-mt-28 pt-20">
-          <SectionHeading
-            eyebrow="Inside Flowly"
-            title="Six beliefs. One slow scroll."
-            subtitle="Each value is a full chapter — keep scrolling to see what we won't compromise on."
-          />
+          <SectionHeading eyebrow="Our values" title="What we stand for" />
         </Container>
-        <ValuesMobileCinema values={VALUES_MOBILE} />
+        <ValuesMobileList values={VALUES_MOBILE} />
       </div>
 
       {/* Desktop — scroll-scrubbed sidebar + panel */}
@@ -963,8 +954,29 @@ function ValuesSection() {
 
 export function About() {
   return (
-    <AboutScrollWash>
-      <AboutHero />
+    <>
+      <PageHero
+        eyebrow="Our story"
+        title={
+          <>
+            The calm operating system{" "}
+            <span className="text-gradient-hero">for modern teams</span>
+          </>
+        }
+        subtitle="Flowly started with a simple frustration: great teams were drowning in tools that created more work than they removed. So we built the one we always wanted."
+      >
+        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
+          <Magnetic>
+            <Button href="/contact" size="lg">
+              Join the team
+              <ArrowUpRight className="h-4 w-4" />
+            </Button>
+          </Magnetic>
+          <Button href="/#features" variant="secondary" size="lg">
+            See the product
+          </Button>
+        </div>
+      </PageHero>
 
       {/* Backed by */}
       <Container className="pb-8">
@@ -1066,6 +1078,6 @@ export function About() {
           </div>
         </Container>
       </section>
-    </AboutScrollWash>
+    </>
   );
 }
