@@ -4,7 +4,7 @@ import type { ReactNode } from "react";
 import { motion } from "framer-motion";
 import { Container } from "@/components/ui/container";
 import { CanvasGradient } from "@/components/ui/canvas-gradient";
-import { fadeUp, staggerContainer } from "@/lib/motion";
+import { revealUp, staggerContainer } from "@/lib/motion";
 
 /** Top-of-page hero for inner content pages — matches the landing hero's feel. */
 export function PageHero({
@@ -36,7 +36,7 @@ export function PageHero({
         >
           {eyebrow && (
             <motion.span
-              variants={fadeUp}
+              variants={revealUp}
               className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3.5 py-1.5 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-muted backdrop-blur"
             >
               <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_2px_var(--accent)]" />
@@ -44,21 +44,21 @@ export function PageHero({
             </motion.span>
           )}
           <motion.h1
-            variants={fadeUp}
+            variants={revealUp}
             className="mt-6 text-balance font-display text-[2.75rem] font-bold leading-[1.02] tracking-tight text-foreground sm:text-6xl md:text-7xl"
           >
             {title}
           </motion.h1>
           {subtitle && (
             <motion.p
-              variants={fadeUp}
+              variants={revealUp}
               className="mx-auto mt-6 max-w-xl text-pretty text-lg leading-relaxed text-muted"
             >
               {subtitle}
             </motion.p>
           )}
           {children && (
-            <motion.div variants={fadeUp} className="mt-9">
+            <motion.div variants={revealUp} className="mt-9">
               {children}
             </motion.div>
           )}

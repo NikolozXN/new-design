@@ -12,7 +12,8 @@ import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Button } from "@/components/ui/button";
 import { SpotlightCard } from "@/components/ui/spotlight-card";
-import { inView, scaleUp, staggerContainer } from "@/lib/motion";
+import { StaggerReveal } from "@/components/ui/scroll-reveal";
+import { scaleReveal } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 type Plan = {
@@ -257,18 +258,13 @@ export function Pricing() {
 
         <BillingToggle annual={annual} setAnnual={setAnnual} />
 
-        <motion.div
-          variants={staggerContainer(0.12)}
-          initial="hidden"
-          whileInView="show"
-          viewport={inView}
-          className="mx-auto mt-12 grid max-w-5xl items-stretch gap-5 lg:grid-cols-3"
-        >
-          {PLANS.map((plan) =>
+        <StaggerReveal stagger={0.12} className="mx-auto mt-12 grid max-w-5xl items-stretch gap-5 lg:grid-cols-3">
+          {PLANS.map((plan, i) =>
             plan.highlighted ? (
               <motion.div
                 key={plan.name}
-                variants={scaleUp}
+                variants={scaleReveal}
+                custom={i}
                 className="relative lg:-translate-y-3 lg:scale-[1.03]"
               >
                 <div className="absolute -inset-2 -z-10 rounded-[1.7rem] bg-gradient-to-b from-primary/40 to-accent/20 opacity-60 blur-2xl" />
@@ -280,14 +276,14 @@ export function Pricing() {
                 </div>
               </motion.div>
             ) : (
-              <motion.div key={plan.name} variants={scaleUp} className="relative">
+              <motion.div key={plan.name} variants={scaleReveal} custom={i} className="relative">
                 <SpotlightCard className="h-full">
                   <PlanCard plan={plan} annual={annual} />
                 </SpotlightCard>
               </motion.div>
             )
           )}
-        </motion.div>
+        </StaggerReveal>
 
         {/* Trust strip */}
         <div className="mt-12 flex flex-wrap items-center justify-center gap-x-8 gap-y-3">

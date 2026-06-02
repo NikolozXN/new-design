@@ -58,3 +58,57 @@ export const scaleUp: Variants = {
 };
 
 export const inView = { once: true, amount: 0.2 } as const;
+
+/** Triggers earlier on phones — fixes whileInView not firing on mobile scroll. */
+export const touchView = { once: true, amount: 0.08, margin: "0px 0px -120px 0px" } as const;
+
+/** Blur-free rise — safe for iOS Safari viewport reveals. */
+export const revealUp: Variants = {
+  hidden: { opacity: 0, y: 28 },
+  show: {
+    opacity: 1,
+    y: 0,
+    transition: { duration: 0.65, ease: EASE },
+  },
+};
+
+export const scaleReveal: Variants = {
+  hidden: { opacity: 0, scale: 0.92, y: 28 },
+  show: (i = 0) => ({
+    opacity: 1,
+    scale: 1,
+    y: 0,
+    transition: { duration: 0.65, ease: EASE, delay: i * 0.1 },
+  }),
+};
+
+/** Premium card reveal — no blur (iOS animates opacity/transform reliably). */
+export const revealIn: Variants = {
+  hidden: { opacity: 0, y: 36, scale: 0.94 },
+  show: (i = 0) => ({
+    opacity: 1,
+    y: 0,
+    scale: 1,
+    transition: { duration: 0.65, ease: EASE, delay: i * 0.08 },
+  }),
+};
+
+export const revealFromLeft: Variants = {
+  hidden: { opacity: 0, x: -44, scale: 0.96 },
+  show: (i = 0) => ({
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: { duration: 0.65, ease: EASE, delay: i * 0.1 },
+  }),
+};
+
+export const revealFromRight: Variants = {
+  hidden: { opacity: 0, x: 44, scale: 0.96 },
+  show: (i = 0) => ({
+    opacity: 1,
+    x: 0,
+    scale: 1,
+    transition: { duration: 0.65, ease: EASE, delay: i * 0.1 },
+  }),
+};

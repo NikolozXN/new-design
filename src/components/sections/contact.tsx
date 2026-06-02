@@ -18,7 +18,8 @@ import { Container } from "@/components/ui/container";
 import { PageHero } from "@/components/ui/page-hero";
 import { IconTile } from "@/components/ui/icon-tile";
 import { Aurora } from "@/components/ui/aurora";
-import { fadeUp, inView, staggerContainer } from "@/lib/motion";
+import { ScrollReveal, StaggerReveal } from "@/components/ui/scroll-reveal";
+import { revealIn, revealUp } from "@/lib/motion";
 
 const CHANNELS = [
   { icon: Mail, title: "Talk to sales", body: "See a live demo and get a plan tailored to your team.", link: "sales@flowly.com" },
@@ -79,11 +80,8 @@ export function Contact() {
         <Container>
           <div className="grid gap-8 lg:grid-cols-[1fr_0.9fr] lg:gap-12">
             {/* Form */}
-            <motion.div
-              initial={{ opacity: 0, y: 28, filter: "blur(6px)" }}
-              whileInView={{ opacity: 1, y: 0, filter: "blur(0px)" }}
-              viewport={inView}
-              transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
+            <ScrollReveal
+              variants={revealIn}
               className="relative rounded-card border border-border bg-surface p-6 shadow-xl shadow-black/5 sm:p-8 dark:shadow-black/30"
             >
               <div className="pointer-events-none absolute -inset-2 -z-10 rounded-[1.7rem] bg-gradient-to-b from-primary/20 to-accent/10 opacity-50 blur-2xl" />
@@ -205,21 +203,17 @@ export function Contact() {
                   </motion.form>
                 )}
               </AnimatePresence>
-            </motion.div>
+            </ScrollReveal>
 
             {/* Channels */}
-            <motion.div
-              variants={staggerContainer(0.1)}
-              initial="hidden"
-              whileInView="show"
-              viewport={inView}
-              className="flex flex-col gap-4"
-            >
-              {CHANNELS.map((c) => (
+            <StaggerReveal stagger={0.1} className="flex flex-col gap-4">
+              {CHANNELS.map((c, i) => (
                 <motion.a
                   key={c.title}
-                  variants={fadeUp}
+                  variants={revealIn}
+                  custom={i}
                   href={`mailto:${c.link}`}
+                  whileTap={{ scale: 0.98 }}
                   className="group flex items-start gap-4 rounded-card border border-border bg-surface p-5 transition-all hover:-translate-y-0.5 hover:border-primary/30"
                 >
                   <IconTile icon={c.icon} size="sm" />
@@ -233,21 +227,17 @@ export function Contact() {
                   </div>
                 </motion.a>
               ))}
-            </motion.div>
+            </StaggerReveal>
           </div>
 
           {/* Offices */}
-          <motion.div
-            variants={staggerContainer(0.08)}
-            initial="hidden"
-            whileInView="show"
-            viewport={inView}
-            className="mt-16 grid gap-4 sm:mt-20 sm:grid-cols-3"
-          >
-            {OFFICES.map((o) => (
+          <StaggerReveal stagger={0.08} className="mt-16 grid gap-4 sm:mt-20 sm:grid-cols-3">
+            {OFFICES.map((o, i) => (
               <motion.div
                 key={o.city}
-                variants={fadeUp}
+                variants={revealIn}
+                custom={i}
+                whileTap={{ scale: 0.98 }}
                 className="rounded-card border border-border bg-surface p-5 transition-transform hover:-translate-y-0.5"
               >
                 <div className="flex items-center gap-2">
@@ -261,29 +251,24 @@ export function Contact() {
                 <p className="mt-1 font-mono text-xs text-muted/80">{o.tz}</p>
               </motion.div>
             ))}
-          </motion.div>
+          </StaggerReveal>
 
           {/* FAQ */}
           <div className="mt-20 sm:mt-28">
             <SectionHeading eyebrow="FAQ" title="Before you reach out" />
-            <motion.div
-              variants={staggerContainer(0.08)}
-              initial="hidden"
-              whileInView="show"
-              viewport={inView}
-              className="mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-2"
-            >
-              {FAQS.map((f) => (
+            <StaggerReveal stagger={0.08} className="mx-auto mt-12 grid max-w-4xl gap-4 sm:grid-cols-2">
+              {FAQS.map((f, i) => (
                 <motion.div
                   key={f.q}
-                  variants={fadeUp}
+                  variants={revealUp}
+                  custom={i}
                   className="rounded-card border border-border bg-surface p-6"
                 >
                   <h3 className="font-semibold text-foreground">{f.q}</h3>
                   <p className="mt-2 text-sm leading-relaxed text-muted">{f.a}</p>
                 </motion.div>
               ))}
-            </motion.div>
+            </StaggerReveal>
           </div>
         </Container>
       </section>

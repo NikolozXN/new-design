@@ -13,6 +13,8 @@ import type { LucideIcon } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { IconTile } from "@/components/ui/icon-tile";
+import { ScrollReveal } from "@/components/ui/scroll-reveal";
+import { revealIn } from "@/lib/motion";
 
 type Step = {
   icon: LucideIcon;
@@ -45,6 +47,49 @@ const STEPS: Step[] = [
   },
 ];
 
+function StepVisual() {
+  return (
+    <div className="relative hidden aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-surface-2 md:block">
+      <div className="absolute inset-0 bg-grid opacity-50" />
+      <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/30 blur-2xl" />
+      <div className="absolute bottom-6 left-6 right-6 space-y-3">
+        {[90, 70, 80].map((wpct, i) => (
+          <div
+            key={i}
+            className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3"
+          >
+            <span className="h-7 w-7 shrink-0 rounded-lg bg-gradient-to-br from-primary to-accent" />
+            <span
+              className="h-2 rounded bg-muted/30"
+              style={{ width: `${wpct}%` }}
+            />
+          </div>
+        ))}
+      </div>
+    </div>
+  );
+}
+
+function StepBody({ step }: { step: Step }) {
+  const Icon = step.icon;
+  return (
+    <>
+      <div className="group flex items-center gap-4">
+        <IconTile icon={Icon} size="lg" />
+        <span className="font-display text-6xl font-bold text-outline-muted">
+          {step.number}
+        </span>
+      </div>
+      <h3 className="mt-7 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
+        {step.title}
+      </h3>
+      <p className="mt-4 max-w-md text-lg leading-relaxed text-muted">
+        {step.description}
+      </p>
+    </>
+  );
+}
+
 function StackCard({
   step,
   index,
@@ -58,8 +103,6 @@ function StackCard({
   progress: MotionValue<number>;
   reduce: boolean | null;
 }) {
-  const Icon = step.icon;
-  // Earlier cards shrink slightly as later ones stack over them.
   const end = (index + 1) / total;
   const scale = useTransform(progress, [end - 0.25, end], [1, 0.93]);
 
@@ -74,46 +117,32 @@ function StackCard({
       >
         <div className="grid items-center gap-8 bg-surface p-8 sm:p-12 md:grid-cols-2">
           <div>
-            <div className="group flex items-center gap-4">
-              <IconTile icon={Icon} size="lg" />
-              <span className="font-display text-6xl font-bold text-outline-muted">
-                {step.number}
-              </span>
-            </div>
-            <h3 className="mt-7 font-display text-3xl font-bold tracking-tight text-foreground sm:text-4xl">
-              {step.title}
-            </h3>
-            <p className="mt-4 max-w-md text-lg leading-relaxed text-muted">
-              {step.description}
-            </p>
+            <StepBody step={step} />
           </div>
-
-          {/* Decorative visual */}
-          <div className="relative hidden aspect-[4/3] overflow-hidden rounded-2xl border border-border bg-surface-2 md:block">
-            <div className="absolute inset-0 bg-grid opacity-50" />
-            <div className="absolute -right-8 -top-8 h-40 w-40 rounded-full bg-primary/30 blur-2xl" />
-            <div className="absolute bottom-6 left-6 right-6 space-y-3">
-              {[90, 70, 80].map((wpct, i) => (
-                <div
-                  key={i}
-                  className="flex items-center gap-3 rounded-xl border border-border bg-surface p-3"
-                >
-                  <span className="h-7 w-7 shrink-0 rounded-lg bg-gradient-to-br from-primary to-accent" />
-                  <span
-                    className="h-2 rounded bg-muted/30"
-                    style={{ width: `${wpct}%` }}
-                  />
-                </div>
-              ))}
-            </div>
-          </div>
+          <StepVisual />
         </div>
       </motion.div>
     </div>
   );
 }
 
-export function HowItWorks() {
+function MobileSteps() {
+  return (
+    <div className="mt-16 flex flex-col gap-6 md:hidden">
+      {STEPS.map((step, i) => (
+        <ScrollReveal key={step.number} variants={revealIn} custom={i}>
+          <div className="gradient-border overflow-hidden rounded-[2rem]">
+            <div className="bg-surface p-8">
+              <StepBody step={step} />
+            </div>
+          </div>
+        </ScrollReveal>
+      ))}
+    </div>
+  );
+}
+
+function DesktopStack() {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
   const { scrollYProgress } = useScroll({
@@ -121,6 +150,25 @@ export function HowItWorks() {
     offset: ["start start", "end end"],
   });
 
+  return (
+    <Container className="mt-16 hidden md:block">
+      <div ref={ref} className="mx-auto flex max-w-4xl flex-col gap-8 pb-[12vh]">
+        {STEPS.map((step, i) => (
+          <StackCard
+            key={step.number}
+            step={step}
+            index={i}
+            total={STEPS.length}
+            progress={scrollYProgress}
+            reduce={reduce}
+          />
+        ))}
+      </div>
+    </Container>
+  );
+}
+
+export function HowItWorks() {
   return (
     <section id="how-it-works" className="relative bg-surface-2/40 py-24 sm:py-32">
       <Container>
@@ -131,20 +179,8 @@ export function HowItWorks() {
         />
       </Container>
 
-      <Container className="mt-16">
-        <div ref={ref} className="mx-auto flex max-w-4xl flex-col gap-8 pb-[12vh]">
-          {STEPS.map((step, i) => (
-            <StackCard
-              key={step.number}
-              step={step}
-              index={i}
-              total={STEPS.length}
-              progress={scrollYProgress}
-              reduce={reduce}
-            />
-          ))}
-        </div>
-      </Container>
+      <MobileSteps />
+      <DesktopStack />
     </section>
   );
 }

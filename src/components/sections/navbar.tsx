@@ -29,6 +29,8 @@ export function Navbar() {
   const [hovered, setHovered] = useState<string | null>(null);
   const [section, setSection] = useState<string>("#home");
 
+  const isHome = pathname === "/";
+
   useEffect(() => {
     const onScroll = () => setScrolled(window.scrollY > 12);
     onScroll();
@@ -83,7 +85,7 @@ export function Navbar() {
         <nav
           className={cn(
             "flex w-full items-center justify-between gap-3 rounded-2xl border pl-4 pr-3 transition-all duration-500 ease-out",
-            scrolled
+            scrolled || !isHome
               ? "h-14 max-w-5xl border-border glass shadow-lg shadow-black/5"
               : "h-16 max-w-7xl border-transparent bg-transparent"
           )}

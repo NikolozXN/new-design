@@ -23,6 +23,8 @@ import { SpotlightCard } from "@/components/ui/spotlight-card";
 import { Scramble } from "@/components/ui/scramble";
 import { IconTile } from "@/components/ui/icon-tile";
 import { FeatureArt } from "@/components/ui/feature-art";
+import { StaggerReveal, ScrollReveal } from "@/components/ui/scroll-reveal";
+import { revealFromLeft, revealIn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -148,19 +150,21 @@ function IntroPanel({ pinned = false }: { pinned?: boolean }) {
   );
 }
 
-/** Mobile / reduced-motion: normal responsive grid. */
+/** Mobile / reduced-motion: normal responsive grid with scroll reveals. */
 function FeaturesGrid() {
   return (
     <section id="features" className="py-20 sm:py-28">
       <Container>
-        <IntroPanel />
-        <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
-          {FEATURES.map((f) => (
-            <div key={f.num} className="min-h-[28rem]">
+        <ScrollReveal variants={revealFromLeft}>
+          <IntroPanel />
+        </ScrollReveal>
+        <StaggerReveal stagger={0.08} className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
+          {FEATURES.map((f, i) => (
+            <motion.div key={f.num} variants={revealIn} custom={i} className="min-h-[28rem]">
               <Panel f={f} />
-            </div>
+            </motion.div>
           ))}
-        </div>
+        </StaggerReveal>
       </Container>
     </section>
   );
