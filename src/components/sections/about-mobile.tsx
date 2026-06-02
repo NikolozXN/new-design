@@ -7,12 +7,21 @@ import {
   useScroll,
   useSpring,
   useTransform,
+  AnimatePresence,
 } from "framer-motion";
 import { ArrowRight } from "lucide-react";
 import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { Counter } from "@/components/ui/counter";
 import { cn } from "@/lib/utils";
+import {
+  ChromaticHeadline,
+  ScrollMeshBackdrop,
+  ScrollWordReveal,
+  FilmPerforations,
+  HoloSheen,
+  OrbitRings,
+} from "@/components/sections/about-fx";
 
 type Value = {
   icon: ComponentType<{ className?: string }>;
@@ -150,8 +159,8 @@ function ValueMobileChapter({
   const bodyOpacity = useTransform(smooth, [0.15, 0.55], [0, 1]);
   const numScale = useTransform(smooth, [0, 0.5], [1.35, 1]);
   const numX = useTransform(smooth, [0, 0.6], [24, -8]);
-  const orbScale = useTransform(smooth, [0, 0.5, 1], [0.6, 1.1, 1]);
   const kickerOpacity = useTransform(smooth, [0, 0.35], [0, 1]);
+  const ringRotate = useTransform(smooth, [0, 1], [0, 120]);
 
   useEffect(() => {
     setRef(ref.current);
@@ -161,12 +170,20 @@ function ValueMobileChapter({
     <div
       ref={ref}
       data-index={index}
-      className="relative flex min-h-[92dvh] snap-start snap-always flex-col justify-end overflow-hidden px-6 pb-14 pt-28"
+      className="relative flex min-h-[100dvh] snap-start snap-always flex-col justify-end overflow-hidden px-6 pb-16 pt-28"
     >
+      <ScrollMeshBackdrop tint={v.tint} progress={smooth} />
+
+      <OrbitRings
+        className="left-1/2 top-[22%] h-[min(72vw,22rem)] w-[min(72vw,22rem)] -translate-x-1/2 opacity-30"
+        rotate={reduce ? undefined : ringRotate}
+        rings={3}
+      />
+
       <span
         aria-hidden
-        className="pointer-events-none absolute -right-6 top-12 font-display text-[8.5rem] font-bold leading-none tracking-tighter sm:text-[9rem]"
-        style={{ color: `${v.tint}14` }}
+        className="pointer-events-none absolute -right-4 top-10 font-display text-[9rem] font-bold leading-none tracking-tighter"
+        style={{ color: `${v.tint}16` }}
       >
         <motion.span
           style={reduce ? undefined : { scale: numScale, x: numX }}
@@ -175,16 +192,6 @@ function ValueMobileChapter({
           {String(index + 1).padStart(2, "0")}
         </motion.span>
       </span>
-
-      <motion.span
-        aria-hidden
-        style={
-          reduce
-            ? { background: `${v.tint}35` }
-            : { background: `${v.tint}35`, scale: orbScale }
-        }
-        className="pointer-events-none absolute left-1/2 top-[28%] h-64 w-64 -translate-x-1/2 rounded-full blur-[90px]"
-      />
 
       {v.kicker ? (
         <motion.span
@@ -215,12 +222,20 @@ function ValueMobileChapter({
         <Icon className="h-7 w-7" />
       </motion.div>
 
-      <motion.h3
-        style={reduce ? undefined : { x: titleX }}
-        className="relative font-display text-[2.15rem] font-bold leading-[1.02] tracking-tight text-foreground"
-      >
-        {displayTitle}
-      </motion.h3>
+      <motion.div style={reduce ? undefined : { x: titleX }} className="relative">
+        {reduce ? (
+          <h3 className="font-display text-[2.15rem] font-bold leading-[1.02] tracking-tight text-foreground">
+            {displayTitle}
+          </h3>
+        ) : (
+          <ChromaticHeadline
+            progress={smooth}
+            className="font-display text-[2.15rem] font-bold leading-[1.02] tracking-tight text-foreground"
+          >
+            {displayTitle}
+          </ChromaticHeadline>
+        )}
+      </motion.div>
       <motion.p
         style={reduce ? undefined : { y: bodyY, opacity: bodyOpacity }}
         className="relative mt-4 max-w-md text-base leading-relaxed text-muted"
@@ -242,6 +257,21 @@ export function ValuesMobileCinema({ values }: { values: Value[] }) {
 
   return (
     <div className="relative lg:hidden">
+      <AnimatePresence mode="wait">
+        <motion.span
+          key={activeValue?.tint ?? "bg"}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
+          exit={{ opacity: 0 }}
+          transition={{ duration: 0.6 }}
+          aria-hidden
+          className="pointer-events-none absolute inset-0 -z-10"
+          style={{
+            background: `radial-gradient(ellipse 90% 50% at 50% 0%, ${activeValue?.tint ?? "#7c3aed"}18, transparent 65%)`,
+          }}
+        />
+      </AnimatePresence>
+
       <div className="sticky top-[4.75rem] z-30 border-b border-border/50 bg-background/85 px-6 py-3 backdrop-blur-xl">
         <div className="flex items-center justify-between gap-3">
           <span className="font-mono text-[10px] font-semibold uppercase tracking-[0.22em] text-muted">
@@ -308,8 +338,13 @@ function StatSnapCard({ s, i }: { s: Stat; i: number }) {
     <motion.div
       ref={ref}
       style={reduce ? undefined : { scale, rotate, y }}
-      className="snap-center w-[78vw] max-w-xs shrink-0 rounded-[2rem] border border-border bg-surface p-8 shadow-xl shadow-black/5 dark:shadow-black/25"
+      className="relative snap-center w-[78vw] max-w-xs shrink-0 overflow-hidden rounded-[2rem] border border-border bg-surface p-8 shadow-xl shadow-black/5 dark:shadow-black/25"
     >
+      {!reduce && <HoloSheen progress={scrollYProgress} />}
+      <span
+        aria-hidden
+        className="pointer-events-none absolute inset-x-0 top-0 h-px bg-gradient-to-r from-transparent via-primary/50 to-transparent"
+      />
       <div className="font-display text-5xl font-bold tracking-tight text-foreground">
         {s.plain ? s.plain : <Counter value={s.value} suffix={s.suffix} />}
       </div>
@@ -360,7 +395,10 @@ export function MissionMobileEditorial({ eyebrow, headline, highlight, paragraph
             <span className="font-mono text-xs font-semibold text-primary">
               {String(i + 1).padStart(2, "0")}
             </span>
-            <p className="mt-3 text-lg leading-relaxed text-muted">{text}</p>
+            <ScrollWordReveal
+              text={text}
+              className="mt-3 text-lg leading-relaxed"
+            />
             <span className="absolute bottom-0 left-0 top-0 w-1 rounded-full bg-gradient-to-b from-primary to-accent" />
           </div>
         </MobileScrubBlock>
@@ -389,9 +427,10 @@ function TeamSnapCard({ m, i }: { m: TeamMember; i: number }) {
     <motion.div
       ref={ref}
       style={reduce ? undefined : { scale, y, rotate }}
-      className="snap-center w-[72vw] max-w-[17rem] shrink-0"
+      className="relative snap-center w-[72vw] max-w-[17rem] shrink-0"
     >
       <div className="relative aspect-[3/4] overflow-hidden rounded-[1.75rem] shadow-2xl ring-1 ring-border">
+        {!reduce && <HoloSheen progress={scrollYProgress} />}
         <span
           className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-white"
           style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
@@ -440,5 +479,82 @@ export function TeamMobileFilmstrip({ team }: { team: TeamMember[] }) {
         Swipe to meet everyone →
       </p>
     </div>
+  );
+}
+
+/* ── Milestones: horizontal film tape ──────────────────────────────────── */
+
+type Milestone = {
+  year: string;
+  title: string;
+  body: string;
+};
+
+function MilestoneTapeCard({ m, i }: { m: Milestone; i: number }) {
+  const ref = useRef<HTMLDivElement>(null);
+  const reduce = useReducedMotion();
+  const { scrollYProgress } = useScroll({
+    target: ref,
+    offset: ["start 0.95", "center 0.55"],
+  });
+  const scale = useSpring(useTransform(scrollYProgress, [0, 1], [0.84, 1]), {
+    stiffness: 110,
+    damping: 22,
+  });
+  const y = useTransform(scrollYProgress, [0, 1], [48, 0]);
+  const yearScale = useTransform(scrollYProgress, [0, 1], [0.88, 1]);
+
+  return (
+    <motion.div
+      ref={ref}
+      style={reduce ? undefined : { scale, y }}
+      className="relative snap-center w-[82vw] max-w-sm shrink-0"
+    >
+      <div className="relative overflow-hidden rounded-[1.75rem] border border-border bg-surface shadow-2xl shadow-black/10 dark:shadow-black/35">
+        <FilmPerforations />
+        {!reduce && <HoloSheen progress={scrollYProgress} />}
+        <div className="px-6 pb-6 pt-8">
+          <motion.span
+            style={reduce ? undefined : { scale: yearScale }}
+            className="block font-display text-6xl font-bold leading-none tracking-tight text-gradient-brand"
+          >
+            {m.year}
+          </motion.span>
+          <h3 className="mt-4 font-display text-xl font-semibold text-foreground">{m.title}</h3>
+          <p className="mt-2 text-sm leading-relaxed text-muted">{m.body}</p>
+          <span className="mt-5 inline-flex font-mono text-[10px] font-semibold uppercase tracking-[0.2em] text-primary">
+            Stop {String(i + 1).padStart(2, "0")}
+          </span>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+export function MilestonesMobileTape({ milestones }: { milestones: Milestone[] }) {
+  return (
+    <section className="relative py-16 md:hidden">
+      <Container>
+        <SectionHeading
+          eyebrow="The journey"
+          title="Five years, five chapters"
+          subtitle="Swipe the timeline like film — each card is a moment that shaped Flowly."
+        />
+      </Container>
+      <div className="relative mt-10">
+        <span
+          aria-hidden
+          className="pointer-events-none absolute left-6 right-6 top-1/2 h-px -translate-y-1/2 bg-gradient-to-r from-transparent via-border to-transparent"
+        />
+        <div className="flex snap-x snap-mandatory gap-5 overflow-x-auto px-6 pb-6 [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
+          {milestones.map((m, i) => (
+            <MilestoneTapeCard key={m.year} m={m} i={i} />
+          ))}
+        </div>
+      </div>
+      <p className="text-center font-mono text-[10px] uppercase tracking-[0.2em] text-muted">
+        Swipe through our story →
+      </p>
+    </section>
   );
 }

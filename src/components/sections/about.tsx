@@ -27,24 +27,24 @@ import {
   HeartHandshake,
 } from "lucide-react";
 import { Container } from "@/components/ui/container";
-import { PageHero } from "@/components/ui/page-hero";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { IconTile } from "@/components/ui/icon-tile";
 import { Counter } from "@/components/ui/counter";
 import { Button } from "@/components/ui/button";
-import { Magnetic } from "@/components/ui/magnetic";
 import { Aurora } from "@/components/ui/aurora";
 import { Marquee } from "@/components/ui/marquee";
 import { Scramble } from "@/components/ui/scramble";
 import { revealFromLeft, revealFromRight, revealIn, revealUp } from "@/lib/motion";
-import { ScrollReveal, ScrollRevealOnce, StaggerReveal } from "@/components/ui/scroll-reveal";
+import { ScrollReveal, StaggerReveal } from "@/components/ui/scroll-reveal";
 import {
   ValuesMobileCinema,
   StatsMobileRail,
   MissionMobileEditorial,
   TeamMobileFilmstrip,
+  MilestonesMobileTape,
   MobileScrubBlock,
 } from "@/components/sections/about-mobile";
+import { AboutHero, AboutScrollWash, OrbitRings } from "@/components/sections/about-fx";
 import { cn } from "@/lib/utils";
 
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -155,6 +155,12 @@ function ValuesPanelContent({
       )}
       style={{ boxShadow: `0 32px 64px -32px ${v.tint}55` }}
     >
+      <span
+        aria-hidden
+        className="pointer-events-none absolute -right-8 top-1/2 h-32 w-32 -translate-y-1/2 opacity-20"
+      >
+        <OrbitRings className="inset-0" rings={2} />
+      </span>
       <span
         aria-hidden
         className="pointer-events-none absolute inset-0 opacity-80"
@@ -520,50 +526,9 @@ function MilestonesPinned() {
   );
 }
 
-/* MOBILE: vertical timeline — whileInView reveals (reliable on touch) */
-function MilestoneRowMobile({ m }: { m: (typeof MILESTONES_MOBILE)[number] }) {
-  return (
-    <MobileScrubBlock tall={false} className="relative pl-14">
-      <span className="absolute left-[1.15rem] top-8 z-10 h-5 w-5 -translate-x-1/2">
-        <span className="absolute -inset-2 rounded-full bg-primary/40 blur-md" />
-        <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
-      </span>
-      <span className="block font-display text-5xl font-bold leading-none tracking-tight text-gradient-brand">
-        {m.year}
-      </span>
-      <div className="mt-3 rounded-[1.25rem] border border-border bg-surface p-5 shadow-xl shadow-black/5 dark:shadow-black/30">
-        <h3 className="font-display text-lg font-semibold text-foreground">{m.title}</h3>
-        <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
-      </div>
-    </MobileScrubBlock>
-  );
-}
-
+/* MOBILE: horizontal film tape timeline */
 function MilestonesMobile() {
-  return (
-    <section className="relative py-16 md:hidden">
-      <Aurora className="opacity-50" />
-      <Container>
-        <SectionHeading
-          eyebrow="The journey"
-          title="Five years, five chapters"
-          subtitle="Scroll the timeline — each stop is a moment that shaped Flowly."
-        />
-        <div className="relative mx-auto mt-12 max-w-xl">
-          <span className="absolute left-[1.15rem] top-0 h-full w-px -translate-x-1/2 bg-border" />
-          <ScrollRevealOnce
-            from={{ scaleY: 0 }}
-            to={{ scaleY: 1 }}
-            transition={{ duration: 1.1, ease: [0.16, 1, 0.3, 1] }}
-            className="absolute left-[1.15rem] top-0 h-full w-0.5 origin-top -translate-x-1/2 rounded-full bg-gradient-to-b from-primary to-accent shadow-[0_0_12px_2px_var(--primary)]"
-          />
-          {MILESTONES_MOBILE.map((m) => (
-            <MilestoneRowMobile key={m.year} m={m} />
-          ))}
-        </div>
-      </Container>
-    </section>
-  );
+  return <MilestonesMobileTape milestones={MILESTONES_MOBILE} />;
 }
 
 function MilestonesStatic() {
@@ -998,29 +963,8 @@ function ValuesSection() {
 
 export function About() {
   return (
-    <>
-      <PageHero
-        eyebrow="Our story"
-        title={
-          <>
-            The calm operating system{" "}
-            <span className="text-gradient-hero">for modern teams</span>
-          </>
-        }
-        subtitle="Flowly started with a simple frustration: great teams were drowning in tools that created more work than they removed. So we built the one we always wanted."
-      >
-        <div className="flex flex-col items-center justify-center gap-3 sm:flex-row">
-          <Magnetic>
-            <Button href="/contact" size="lg">
-              Join the team
-              <ArrowUpRight className="h-4 w-4" />
-            </Button>
-          </Magnetic>
-          <Button href="/#features" variant="secondary" size="lg">
-            See the product
-          </Button>
-        </div>
-      </PageHero>
+    <AboutScrollWash>
+      <AboutHero />
 
       {/* Backed by */}
       <Container className="pb-8">
@@ -1122,6 +1066,6 @@ export function About() {
           </div>
         </Container>
       </section>
-    </>
+    </AboutScrollWash>
   );
 }

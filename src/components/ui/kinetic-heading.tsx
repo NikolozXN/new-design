@@ -38,6 +38,8 @@ export function KineticHeading({
                     <motion.span
                       key={i}
                       custom={i}
+                      initial="hidden"
+                      animate="show"
                       variants={charVariants}
                       className={cn(
                         "inline-block",
