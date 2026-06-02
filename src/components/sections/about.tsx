@@ -39,7 +39,7 @@ import { Scramble } from "@/components/ui/scramble";
 import { revealFromLeft, revealFromRight, revealIn, revealUp } from "@/lib/motion";
 import { ScrollReveal, StaggerReveal } from "@/components/ui/scroll-reveal";
 import {
-  ValuesMobileList,
+  ValuesMobileScroll,
   StatsMobileRail,
   MissionMobileEditorial,
   TeamMobileFilmstrip,
@@ -930,9 +930,13 @@ function ValuesSection() {
       {/* Mobile — cinematic full-screen chapters */}
       <div className="lg:hidden">
         <Container className="scroll-mt-28 pt-20">
-          <SectionHeading eyebrow="Our values" title="What we stand for" />
+          <SectionHeading
+            eyebrow="Our values"
+            title="Scroll through what we stand for"
+            subtitle="Keep scrolling — each value crossfades into the next."
+          />
         </Container>
-        <ValuesMobileList values={VALUES_MOBILE} />
+        <ValuesMobileScroll values={VALUES_MOBILE} />
       </div>
 
       {/* Desktop — scroll-scrubbed sidebar + panel */}
