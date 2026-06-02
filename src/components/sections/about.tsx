@@ -1,6 +1,6 @@
 "use client";
 
-import { useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
+import { useEffect, useLayoutEffect, useRef, useState, type MouseEvent as ReactMouseEvent } from "react";
 import {
   motion,
   AnimatePresence,
@@ -10,6 +10,7 @@ import {
   useMotionValue,
   useMotionTemplate,
   useReducedMotion,
+  type MotionValue,
 } from "framer-motion";
 import {
   Sparkles,
@@ -35,8 +36,13 @@ import { Button } from "@/components/ui/button";
 import { Magnetic } from "@/components/ui/magnetic";
 import { Aurora } from "@/components/ui/aurora";
 import { Marquee } from "@/components/ui/marquee";
-import { EASE, fadeUp, inView, scaleUp, staggerContainer } from "@/lib/motion";
+import { Scramble } from "@/components/ui/scramble";
+import { fadeUp, inView, staggerContainer } from "@/lib/motion";
 import { cn } from "@/lib/utils";
+
+const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
+/** Safe scroll height before JS measures the pinned track — prevents blank gaps. */
+const PINNED_EST_SCROLL = 3000;
 
 const BACKERS = ["Sequoia", "Accel", "Y Combinator", "Lightspeed", "First Round"];
 
@@ -97,28 +103,11 @@ function initials(name: string) {
    Panels rise + uncloak on scroll (staggered); flex-grow is CSS-transitioned
    so it can coexist with the entrance animation.
 --------------------------------------------------------------------------- */
-const panelReveal = {
-  hidden: { opacity: 0, y: 34, scale: 0.92, filter: "blur(8px)" },
-  show: {
-    opacity: 1,
-    y: 0,
-    scale: 1,
-    filter: "blur(0px)",
-    transition: { duration: 0.6, ease: [0.16, 1, 0.3, 1] as const },
-  },
-};
-
 function ValuesShowcase() {
   const [active, setActive] = useState(0);
 
   return (
-    <motion.div
-      variants={staggerContainer(0.09)}
-      initial="hidden"
-      whileInView="show"
-      viewport={inView}
-      className="mt-12 flex h-[34rem] flex-col gap-2.5 sm:mt-14 md:h-[27rem] md:flex-row md:gap-3"
-    >
+    <div className="mt-12 flex h-[34rem] flex-col gap-2.5 sm:mt-14 md:h-[27rem] md:flex-row md:gap-3">
       {VALUES.map((v, i) => {
         const isActive = i === active;
         const Icon = v.icon;
@@ -126,7 +115,6 @@ function ValuesShowcase() {
           <motion.button
             key={v.title}
             type="button"
-            variants={panelReveal}
             aria-expanded={isActive}
             onMouseEnter={() => setActive(i)}
             onFocus={() => setActive(i)}
@@ -206,7 +194,7 @@ function ValuesShowcase() {
           </motion.button>
         );
       })}
-    </motion.div>
+    </div>
   );
 }
 
@@ -317,25 +305,64 @@ function TeamTilt({ m, i }: { m: (typeof TEAM)[number]; i: number }) {
 }
 
 /* ---------------------------------------------------------------------------
-   Milestones — scroll-linked timeline in NORMAL page flow (no pinning).
-   Rail fills on scroll, nodes ignite, entries rise in. Always visible —
-   opacity never drops below 45%, so no blank scroll on mobile.
+   Milestones — DESKTOP: horizontal scroll-pinned journey (landing-grade).
+   Cards never drop below 45% opacity; section gets estimated height instantly
+   so nothing below goes blank while JS measures the track.
 --------------------------------------------------------------------------- */
-function MilestoneRow({ m, i }: { m: (typeof MILESTONES)[number]; i: number }) {
-  const left = i % 2 === 0;
-  const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.92", "start 0.45"] });
-  const opacity = useTransform(scrollYProgress, [0, 1], [0.45, 1]);
-  const y = useTransform(scrollYProgress, [0, 1], [30, 0]);
-  const dotScale = useTransform(scrollYProgress, [0, 1], [0.3, 1]);
-  const dotGlow = useTransform(scrollYProgress, [0.2, 1], [0, 1]);
+function MilestoneIntro() {
+  return (
+    <div className="flex h-full w-[84vw] shrink-0 flex-col justify-center sm:w-[30rem]">
+      <span className="inline-flex w-fit items-center gap-2 rounded-full border border-border bg-surface/60 px-3.5 py-1.5 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+        <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_2px_var(--accent)]" />
+        <Scramble text="Milestones" />
+      </span>
+      <h2 className="mt-5 font-display text-4xl font-bold leading-[1.02] tracking-tight text-foreground sm:text-6xl">
+        How we{" "}
+        <span className="text-gradient-brand">got here</span>
+      </h2>
+      <p className="mt-5 max-w-sm text-lg text-muted">
+        From two frustrated builders to 12,000+ teams. Scroll sideways to travel through the story.
+      </p>
+      <div className="mt-8 flex items-center gap-2 text-sm text-muted">
+        <span>Scroll</span>
+        <ArrowRight className="h-4 w-4 animate-pulse text-accent" />
+      </div>
+    </div>
+  );
+}
+
+function Station({
+  m,
+  i,
+  n,
+  progress,
+}: {
+  m: (typeof MILESTONES)[number];
+  i: number;
+  n: number;
+  progress: MotionValue<number>;
+}) {
+  const above = i % 2 === 0;
+  const slot = (i + 1) / (n + 1);
+  const nodeScale = useTransform(progress, [slot - 0.1, slot], [0.3, 1]);
+  const glow = useTransform(progress, [slot - 0.1, slot, slot + 0.18], [0, 1, 0.55]);
+  const cardOpacity = useTransform(progress, [slot - 0.16, slot - 0.02], [0.45, 1]);
+  const cardY = useTransform(progress, [slot - 0.16, slot - 0.02], [above ? -28 : 28, 0]);
+  const yearY = useTransform(progress, [slot - 0.16, slot - 0.02], [above ? -56 : 56, 0]);
+  const yearOpacity = useTransform(progress, [slot - 0.12, slot], [0.45, 1]);
+  const cardScale = useTransform(progress, [slot - 0.16, slot - 0.02], [0.94, 1]);
+  const blurN = useTransform(progress, [slot - 0.16, slot - 0.02], [10, 0]);
+  const filter = useMotionTemplate`blur(${blurN}px)`;
 
   const card = (
-    <motion.div style={{ opacity, y }} className={cn("md:max-w-sm", left && "md:ml-auto md:text-right")}>
-      <span className="font-display text-4xl font-bold leading-none tracking-tight text-gradient-brand sm:text-5xl">
+    <motion.div style={{ opacity: cardOpacity, y: cardY, scale: cardScale, filter }} className="w-[80vw] max-w-[20rem] sm:w-[22rem]">
+      <motion.div
+        style={{ opacity: yearOpacity, y: yearY }}
+        className="font-display text-5xl font-bold leading-none tracking-tight text-gradient-brand sm:text-6xl md:text-7xl"
+      >
         {m.year}
-      </span>
-      <div className="mt-2.5 rounded-card border border-border bg-surface/80 p-4 shadow-lg shadow-black/5 backdrop-blur sm:p-5 dark:shadow-black/30">
+      </motion.div>
+      <div className="mt-3 rounded-card border border-border bg-surface/80 p-4 shadow-xl shadow-black/5 backdrop-blur sm:mt-4 sm:p-5 dark:shadow-black/30">
         <h3 className="font-display text-lg font-semibold text-foreground sm:text-xl">{m.title}</h3>
         <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
       </div>
@@ -343,33 +370,120 @@ function MilestoneRow({ m, i }: { m: (typeof MILESTONES)[number]; i: number }) {
   );
 
   return (
-    <div className="relative pb-12 pl-14 last:pb-0 md:grid md:grid-cols-2 md:gap-14 md:pl-0">
-      <motion.span
-        style={{ scale: dotScale }}
-        className="absolute left-[1.15rem] top-1.5 z-10 h-5 w-5 -translate-x-1/2 md:left-1/2"
-      >
-        <motion.span aria-hidden style={{ opacity: dotGlow }} className="absolute -inset-2 rounded-full bg-primary blur-md" />
-        <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
-      </motion.span>
-
-      {left ? (
-        <>
-          {card}
-          <div aria-hidden className="hidden md:block" />
-        </>
-      ) : (
-        <>
-          <div aria-hidden className="hidden md:block" />
-          {card}
-        </>
-      )}
+    <div className="grid h-full w-[84vw] shrink-0 grid-rows-[1fr_auto_1fr] sm:w-[26rem]">
+      <div className="flex items-end justify-center pb-4 sm:pb-6">{above && card}</div>
+      <div className="relative flex items-center justify-center">
+        <div
+          className={`absolute left-1/2 h-10 w-px -translate-x-1/2 bg-gradient-to-b from-primary/60 to-transparent ${
+            above ? "bottom-1/2 rotate-180" : "top-1/2"
+          }`}
+        />
+        <motion.span style={{ scale: nodeScale }} className="relative z-10 h-5 w-5">
+          <motion.span aria-hidden style={{ opacity: glow }} className="absolute -inset-2.5 rounded-full bg-primary blur-md" />
+          <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
+        </motion.span>
+      </div>
+      <div className="flex items-start justify-center pt-4 sm:pt-6">{!above && card}</div>
     </div>
   );
 }
 
-function MilestonesTimeline() {
+function MilestonesPinned() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [distance, setDistance] = useState(0);
+  const [vh, setVh] = useState(0);
+
+  const { scrollYProgress } = useScroll({ target: sectionRef });
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 32, restDelta: 0.001 });
+  const x = useTransform(progress, [0, 1], [0, -distance]);
+  const fillWidth = useTransform(progress, [0, 1], ["0%", "100%"]);
+
+  useIsoLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const measure = () => {
+      setDistance(Math.max(0, track.scrollWidth - window.innerWidth + 32));
+      setVh(window.innerHeight);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(track);
+    window.addEventListener("resize", measure);
+    if (document.fonts?.ready) document.fonts.ready.then(measure).catch(() => {});
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  const sectionHeight =
+    vh && distance > 0 ? distance + vh : `calc(100dvh + ${PINNED_EST_SCROLL}px)`;
+
+  return (
+    <section ref={sectionRef} style={{ height: sectionHeight }} className="relative hidden md:block">
+      <div className="sticky top-0 h-[100dvh] overflow-hidden">
+        <Aurora className="opacity-50" />
+        <div className="flex h-full items-center pb-12 pt-24 sm:pt-28">
+          <motion.div
+            ref={trackRef}
+            style={{ x }}
+            className="flex h-full max-h-[620px] items-stretch gap-4 px-[8vw] sm:gap-8"
+          >
+            <MilestoneIntro />
+            <div className="relative flex h-full items-stretch">
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
+              <motion.div
+                style={{ width: fillWidth }}
+                className="pointer-events-none absolute left-0 top-1/2 h-0.5 -translate-y-1/2 rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_2px_var(--primary)]"
+              />
+              {MILESTONES.map((m, i) => (
+                <Station key={m.year} m={m} i={i} n={MILESTONES.length} progress={progress} />
+              ))}
+            </div>
+            <div aria-hidden className="w-[8vw] shrink-0" />
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
+/* MOBILE: cinematic vertical timeline — parallax years, de-blur, rail fill */
+function MilestoneRowMobile({ m, i }: { m: (typeof MILESTONES)[number]; i: number }) {
   const ref = useRef<HTMLDivElement>(null);
-  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.75", "end 0.65"] });
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.92", "start 0.42"] });
+  const opacity = useTransform(scrollYProgress, [0, 1], [0.5, 1]);
+  const y = useTransform(scrollYProgress, [0, 1], [40, 0]);
+  const yearX = useTransform(scrollYProgress, [0, 1], [i % 2 === 0 ? -24 : 24, 0]);
+  const scale = useTransform(scrollYProgress, [0, 1], [0.92, 1]);
+  const blurN = useTransform(scrollYProgress, [0, 1], [12, 0]);
+  const filter = useMotionTemplate`blur(${blurN}px)`;
+  const dotScale = useTransform(scrollYProgress, [0, 1], [0.3, 1]);
+  const dotGlow = useTransform(scrollYProgress, [0.2, 1], [0, 1]);
+
+  return (
+    <div ref={ref} className="relative pb-14 pl-14 last:pb-0">
+      <motion.span style={{ scale: dotScale }} className="absolute left-[1.15rem] top-2 z-10 h-5 w-5 -translate-x-1/2">
+        <motion.span aria-hidden style={{ opacity: dotGlow }} className="absolute -inset-2 rounded-full bg-primary blur-md" />
+        <span className="absolute inset-0 rounded-full border-2 border-background bg-gradient-to-br from-primary to-accent" />
+      </motion.span>
+      <motion.div style={{ opacity, y, scale, filter }}>
+        <motion.span style={{ x: yearX }} className="block font-display text-5xl font-bold leading-none tracking-tight text-gradient-brand">
+          {m.year}
+        </motion.span>
+        <div className="mt-3 rounded-card border border-border bg-surface/80 p-4 shadow-xl shadow-black/5 backdrop-blur dark:shadow-black/30">
+          <h3 className="font-display text-lg font-semibold text-foreground">{m.title}</h3>
+          <p className="mt-1.5 text-sm leading-relaxed text-muted">{m.body}</p>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+function MilestonesMobile() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.8", "end 0.55"] });
   const fill = useSpring(useTransform(scrollYProgress, [0, 1], [0, 1]), {
     stiffness: 120,
     damping: 30,
@@ -377,18 +491,18 @@ function MilestonesTimeline() {
   });
 
   return (
-    <section className="relative overflow-hidden py-16 sm:py-24">
+    <section className="relative overflow-hidden py-16 md:hidden">
       <Aurora className="opacity-50" />
       <Container>
         <SectionHeading eyebrow="Milestones" title="How we got here" />
-        <div ref={ref} className="relative mx-auto mt-14 max-w-3xl">
-          <span className="absolute left-[1.15rem] top-0 h-full w-px -translate-x-1/2 bg-border md:left-1/2" />
+        <div ref={ref} className="relative mx-auto mt-12 max-w-xl">
+          <span className="absolute left-[1.15rem] top-0 h-full w-px -translate-x-1/2 bg-border" />
           <motion.span
             style={{ scaleY: fill }}
-            className="absolute left-[1.15rem] top-0 h-full w-0.5 origin-top -translate-x-1/2 rounded-full bg-gradient-to-b from-primary to-accent shadow-[0_0_12px_2px_var(--primary)] md:left-1/2"
+            className="absolute left-[1.15rem] top-0 h-full w-0.5 origin-top -translate-x-1/2 rounded-full bg-gradient-to-b from-primary to-accent shadow-[0_0_12px_2px_var(--primary)]"
           />
           {MILESTONES.map((m, i) => (
-            <MilestoneRow key={m.year} m={m} i={i} />
+            <MilestoneRowMobile key={m.year} m={m} i={i} />
           ))}
         </div>
       </Container>
@@ -421,7 +535,307 @@ function MilestonesStatic() {
 
 function Milestones() {
   const reduce = useReducedMotion();
-  return reduce ? <MilestonesStatic /> : <MilestonesTimeline />;
+  if (reduce) return <MilestonesStatic />;
+
+  return (
+    <>
+      <MilestonesMobile />
+      <MilestonesPinned />
+    </>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   Mission — scroll-linked split: headline parallax + paragraphs scrub in
+--------------------------------------------------------------------------- */
+function MissionStory() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.85", "end 0.35"] });
+  const headlineY = useTransform(scrollYProgress, [0, 1], [60, -40]);
+  const headlineOpacity = useTransform(scrollYProgress, [0, 0.25, 0.85, 1], [0.5, 1, 1, 0.85]);
+  const lineScale = useTransform(scrollYProgress, [0, 0.4], [0, 1]);
+
+  const PARAS = [
+    "In 2021, our founders were running engineering and product at fast-growing startups — and watching their teams lose hours every week to status meetings, scattered docs, and tools that didn't talk to each other.",
+    "They were convinced there was a better way: one workspace where planning, tracking, and shipping lived together, where the busywork was automated, and where opening the app felt calm instead of chaotic.",
+    "Today, Flowly helps more than 12,000 teams across 60 countries plan sprints, automate workflows, and ship faster — without the noise. We're a small, independent team that cares deeply about craft, and we're just getting started.",
+  ];
+
+  return (
+    <div ref={ref}>
+      <Container className="py-12 sm:py-20">
+        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
+        <div className="relative lg:sticky lg:top-32 lg:self-start">
+          <motion.div style={{ y: headlineY, opacity: headlineOpacity }}>
+            <motion.span
+              style={{ scaleX: lineScale }}
+              className="mb-6 block h-1 w-16 origin-left rounded-full bg-gradient-to-r from-primary to-accent"
+            />
+            <h2 className="text-balance font-display text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-4xl md:text-5xl">
+              We believe software should give teams their{" "}
+              <span className="text-gradient-brand">focus back.</span>
+            </h2>
+          </motion.div>
+        </div>
+        <div className="space-y-8">
+          {PARAS.map((text, i) => (
+            <MissionParagraph key={i} text={text} index={i} parentProgress={scrollYProgress} />
+          ))}
+        </div>
+        </div>
+      </Container>
+    </div>
+  );
+}
+
+function MissionParagraph({
+  text,
+  index,
+  parentProgress,
+}: {
+  text: string;
+  index: number;
+  parentProgress: MotionValue<number>;
+}) {
+  const start = 0.12 + index * 0.18;
+  const end = start + 0.22;
+  const opacity = useTransform(parentProgress, [start, end], [0.45, 1]);
+  const x = useTransform(parentProgress, [start, end], [index % 2 === 0 ? 48 : -48, 0]);
+  const blurN = useTransform(parentProgress, [start, end], [10, 0]);
+  const filter = useMotionTemplate`blur(${blurN}px)`;
+
+  return (
+    <motion.p style={{ opacity, x, filter }} className="text-lg leading-relaxed text-muted">
+      {text}
+    </motion.p>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   Stats — scroll-scrubbed band with a glowing divider that draws across
+--------------------------------------------------------------------------- */
+function StatsBand() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.88", "start 0.45"] });
+  const fill = useSpring(useTransform(scrollYProgress, [0, 1], [0, 1]), {
+    stiffness: 140,
+    damping: 28,
+  });
+
+  return (
+    <div ref={ref}>
+      <Container className="py-16 sm:py-20">
+        <div className="relative overflow-hidden rounded-card border border-border bg-border">
+        <motion.div
+          style={{ scaleX: fill }}
+          className="pointer-events-none absolute inset-x-0 top-0 h-0.5 origin-left bg-gradient-to-r from-primary via-accent to-primary shadow-[0_0_16px_2px_var(--primary)]"
+        />
+        <div className="grid grid-cols-2 sm:grid-cols-4">
+          {STATS.map((s, i) => (
+            <StatCell key={s.label} s={s} i={i} progress={scrollYProgress} />
+          ))}
+        </div>
+        </div>
+      </Container>
+    </div>
+  );
+}
+
+function StatCell({
+  s,
+  i,
+  progress,
+}: {
+  s: (typeof STATS)[number];
+  i: number;
+  progress: MotionValue<number>;
+}) {
+  const slot = 0.15 + i * 0.18;
+  const scale = useTransform(progress, [slot, slot + 0.2], [0.88, 1]);
+  const opacity = useTransform(progress, [slot, slot + 0.2], [0.5, 1]);
+  const y = useTransform(progress, [slot, slot + 0.2], [24, 0]);
+
+  return (
+    <motion.div
+      style={{ scale, opacity, y }}
+      className="border-border bg-surface p-6 text-center sm:border-l sm:p-8 sm:first:border-l-0"
+    >
+      <div className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
+        {s.plain ? s.plain : <Counter value={s.value} suffix={s.suffix} />}
+      </div>
+      <div className="mt-1.5 text-sm text-muted">{s.label}</div>
+    </motion.div>
+  );
+}
+
+/* ---------------------------------------------------------------------------
+   Team — DESKTOP: horizontal scroll-pinned portrait gallery
+--------------------------------------------------------------------------- */
+function TeamPortrait({ m, progress, i, n }: { m: (typeof TEAM)[number]; progress: MotionValue<number>; i: number; n: number }) {
+  const slot = (i + 0.5) / n;
+  const opacity = useTransform(progress, [slot - 0.12, slot], [0.5, 1]);
+  const y = useTransform(progress, [slot - 0.12, slot], [48, 0]);
+  const scale = useTransform(progress, [slot - 0.12, slot], [0.9, 1]);
+  const rotate = useTransform(progress, [slot - 0.12, slot], [i % 2 === 0 ? -4 : 4, 0]);
+
+  return (
+    <motion.div style={{ opacity, y, scale, rotate }} className="h-[26rem] w-[16rem] shrink-0 sm:w-[18rem]">
+      <div className="group relative h-full overflow-hidden rounded-3xl shadow-xl ring-1 ring-border">
+        <span
+          className="absolute inset-0 flex items-center justify-center text-3xl font-bold text-white"
+          style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
+        >
+          {initials(m.name)}
+        </span>
+        {/* eslint-disable-next-line @next/next/no-img-element */}
+        <img src={m.img} alt={m.name} loading="lazy" onError={(e) => { e.currentTarget.style.display = "none"; }} className="absolute inset-0 h-full w-full object-cover grayscale-[20%] transition-[filter] duration-500 group-hover:grayscale-0" />
+        <span className="pointer-events-none absolute inset-x-0 bottom-0 h-2/3 bg-gradient-to-t from-black/80 to-transparent" />
+        <div className="absolute inset-x-0 bottom-0 p-5">
+          <div className="font-display text-lg font-semibold text-white">{m.name}</div>
+          <div className="text-sm text-white/75">{m.role}</div>
+        </div>
+      </div>
+    </motion.div>
+  );
+}
+
+function TeamPinned() {
+  const sectionRef = useRef<HTMLDivElement>(null);
+  const trackRef = useRef<HTMLDivElement>(null);
+  const [distance, setDistance] = useState(0);
+  const [vh, setVh] = useState(0);
+
+  const { scrollYProgress } = useScroll({ target: sectionRef });
+  const progress = useSpring(scrollYProgress, { stiffness: 120, damping: 32, restDelta: 0.001 });
+  const x = useTransform(progress, [0, 1], [0, -distance]);
+
+  useIsoLayoutEffect(() => {
+    const track = trackRef.current;
+    if (!track) return;
+    const measure = () => {
+      setDistance(Math.max(0, track.scrollWidth - window.innerWidth + 32));
+      setVh(window.innerHeight);
+    };
+    measure();
+    const ro = new ResizeObserver(measure);
+    ro.observe(track);
+    window.addEventListener("resize", measure);
+    return () => {
+      ro.disconnect();
+      window.removeEventListener("resize", measure);
+    };
+  }, []);
+
+  const sectionHeight =
+    vh && distance > 0 ? distance + vh : `calc(100dvh + ${PINNED_EST_SCROLL}px)`;
+
+  return (
+    <section ref={sectionRef} style={{ height: sectionHeight }} className="relative mt-14 hidden md:block">
+      <div className="sticky top-0 flex h-[100dvh] items-center overflow-hidden pb-12 pt-24">
+        <motion.div ref={trackRef} style={{ x }} className="flex items-center gap-6 px-[8vw]">
+          <div className="w-[28vw] shrink-0 sm:w-[22rem]">
+            <span className="inline-flex items-center gap-2 rounded-full border border-border bg-surface/60 px-3.5 py-1.5 font-mono text-xs font-semibold uppercase tracking-[0.18em] text-muted">
+              <span className="h-1.5 w-1.5 rounded-full bg-accent shadow-[0_0_10px_2px_var(--accent)]" />
+              <Scramble text="The team" />
+            </span>
+            <h2 className="mt-5 font-display text-4xl font-bold tracking-tight text-foreground sm:text-5xl">
+              The people behind{" "}
+              <span className="text-gradient-brand">Flowly</span>
+            </h2>
+            <p className="mt-4 text-muted">Scroll to meet the team.</p>
+            <ArrowRight className="mt-6 h-5 w-5 animate-pulse text-accent" />
+          </div>
+          {TEAM.map((m, i) => (
+            <TeamPortrait key={m.name} m={m} progress={progress} i={i} n={TEAM.length} />
+          ))}
+          <div aria-hidden className="w-[8vw] shrink-0" />
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function FounderNote() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.9", "start 0.45"] });
+  const scale = useSpring(useTransform(scrollYProgress, [0, 1], [0.92, 1]), { stiffness: 120, damping: 28 });
+  const opacity = useTransform(scrollYProgress, [0, 1], [0.5, 1]);
+  const y = useTransform(scrollYProgress, [0, 1], [40, 0]);
+  const rotate = useTransform(scrollYProgress, [0, 1], [-2, 0]);
+  const borderGlow = useTransform(scrollYProgress, [0.3, 1], [0, 1]);
+
+  return (
+    <div ref={ref}>
+      <Container className="pb-6 sm:pb-10">
+        <motion.figure
+        style={{ scale, opacity, y, rotate }}
+        className="relative mx-auto max-w-3xl overflow-hidden rounded-card border border-border bg-surface p-8 text-center shadow-xl shadow-black/5 sm:p-12 dark:shadow-black/30"
+      >
+        <motion.span
+          aria-hidden
+          style={{ opacity: borderGlow }}
+          className="pointer-events-none absolute inset-0 rounded-card ring-1 ring-inset ring-primary/30"
+        />
+        <motion.div
+          aria-hidden
+          style={{ opacity: borderGlow }}
+          className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/15 blur-3xl"
+        />
+        <Quote className="mx-auto h-8 w-8 text-primary/70" />
+        <blockquote className="mt-5 text-balance font-display text-xl font-semibold leading-snug tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
+          &ldquo;We&apos;re not building another tool to add to the pile. We&apos;re building the one
+          that makes the pile disappear.&rdquo;
+        </blockquote>
+        <figcaption className="mt-7 flex items-center justify-center gap-4">
+          <div className="flex -space-x-3">
+            {[TEAM[0], TEAM[1]].map((m) => (
+              <span
+                key={m.name}
+                className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white ring-2 ring-surface"
+                style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
+              >
+                {initials(m.name)}
+                {/* eslint-disable-next-line @next/next/no-img-element */}
+                <img
+                  src={m.img}
+                  alt={m.name}
+                  loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                  }}
+                  className="absolute inset-0 h-full w-full object-cover"
+                />
+              </span>
+            ))}
+          </div>
+          <div className="text-left">
+            <div className="text-sm font-semibold text-foreground">Sofia Chen &amp; Marcus Lee</div>
+            <div className="text-xs text-muted">Co-founders, Flowly</div>
+          </div>
+        </figcaption>
+        </motion.figure>
+      </Container>
+    </div>
+  );
+}
+
+function ValuesSection() {
+  const ref = useRef<HTMLDivElement>(null);
+  const { scrollYProgress } = useScroll({ target: ref, offset: ["start 0.8", "end 0.5"] });
+  const bar = useSpring(useTransform(scrollYProgress, [0, 1], [0, 1]), { stiffness: 120, damping: 30 });
+
+  return (
+    <div ref={ref}>
+      <Container className="py-16 sm:py-24">
+      <SectionHeading eyebrow="Our values" title="What we care about" />
+      <motion.div
+        style={{ scaleX: bar }}
+        className="mx-auto mt-8 h-0.5 max-w-xs origin-left rounded-full bg-gradient-to-r from-primary to-accent shadow-[0_0_12px_var(--primary)]"
+      />
+        <ValuesShowcase />
+      </Container>
+    </div>
+  );
 }
 
 export function About() {
@@ -475,146 +889,39 @@ export function About() {
         </motion.div>
       </Container>
 
-      {/* Stats band */}
-      <Container className="py-16 sm:py-20">
-        <motion.div
-          variants={staggerContainer(0.1)}
-          initial="hidden"
-          whileInView="show"
-          viewport={inView}
-          className="grid grid-cols-2 gap-px overflow-hidden rounded-card border border-border bg-border sm:grid-cols-4"
-        >
-          {STATS.map((s) => (
-            <motion.div key={s.label} variants={scaleUp} className="bg-surface p-6 text-center sm:p-8 transition-colors hover:bg-surface-2/50">
-              <div className="font-display text-3xl font-bold tracking-tight text-foreground sm:text-5xl">
-                {s.plain ? s.plain : <Counter value={s.value} suffix={s.suffix} />}
-              </div>
-              <div className="mt-1.5 text-sm text-muted">{s.label}</div>
-            </motion.div>
-          ))}
-        </motion.div>
-      </Container>
+      {/* Stats band — scroll-scrubbed */}
+      <StatsBand />
 
-      {/* Mission + story */}
-      <Container className="py-12 sm:py-20">
-        <div className="grid gap-12 lg:grid-cols-[0.9fr_1.1fr] lg:gap-16">
-          <motion.h2
-            initial={{ opacity: 0, y: 24 }}
-            whileInView={{ opacity: 1, y: 0 }}
-            viewport={inView}
-            transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-            className="text-balance font-display text-3xl font-bold leading-[1.1] tracking-tight text-foreground sm:text-4xl md:text-5xl"
-          >
-            We believe software should give teams their{" "}
-            <span className="text-gradient-brand">focus back.</span>
-          </motion.h2>
-          <motion.div
-            variants={staggerContainer(0.12)}
-            initial="hidden"
-            whileInView="show"
-            viewport={inView}
-            className="space-y-5 text-lg leading-relaxed text-muted"
-          >
-            <motion.p variants={fadeUp}>
-              In 2021, our founders were running engineering and product at fast-growing
-              startups — and watching their teams lose hours every week to status meetings,
-              scattered docs, and tools that didn&apos;t talk to each other.
-            </motion.p>
-            <motion.p variants={fadeUp}>
-              They were convinced there was a better way: one workspace where planning,
-              tracking, and shipping lived together, where the busywork was automated, and
-              where opening the app felt calm instead of chaotic.
-            </motion.p>
-            <motion.p variants={fadeUp}>
-              Today, Flowly helps more than 12,000 teams across 60 countries plan sprints,
-              automate workflows, and ship faster — without the noise. We&apos;re a small,
-              independent team that cares deeply about craft, and we&apos;re just getting started.
-            </motion.p>
-          </motion.div>
-        </div>
-      </Container>
+      {/* Mission — scroll-linked split */}
+      <MissionStory />
 
-      {/* Founder's note */}
-      <Container className="pb-6 sm:pb-10">
-        <motion.figure
-          initial={{ opacity: 0, y: 28 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={inView}
-          transition={{ duration: 0.7, ease: [0.16, 1, 0.3, 1] }}
-          className="relative mx-auto max-w-3xl overflow-hidden rounded-card border border-border bg-surface p-8 text-center shadow-xl shadow-black/5 sm:p-12 dark:shadow-black/30"
-        >
-          <motion.div
-            aria-hidden
-            initial={{ opacity: 0.3, scale: 0.9 }}
-            whileInView={{ opacity: 0.6, scale: 1 }}
-            viewport={{ once: true }}
-            transition={{ duration: 1.4, ease: EASE }}
-            className="pointer-events-none absolute -right-10 -top-10 h-40 w-40 rounded-full bg-primary/10 blur-3xl"
-          />
-          <motion.div
-            initial={{ scale: 0, rotate: -20, opacity: 0 }}
-            whileInView={{ scale: 1, rotate: 0, opacity: 1 }}
-            viewport={{ once: true }}
-            transition={{ type: "spring", stiffness: 320, damping: 18, delay: 0.15 }}
-          >
-            <Quote className="mx-auto h-8 w-8 text-primary/70" />
-          </motion.div>
-          <blockquote className="mt-5 text-balance font-display text-xl font-semibold leading-snug tracking-tight text-foreground sm:text-2xl md:text-[1.75rem]">
-            “We&apos;re not building another tool to add to the pile. We&apos;re building the one
-            that makes the pile disappear.”
-          </blockquote>
-          <figcaption className="mt-7 flex items-center justify-center gap-4">
-            <div className="flex -space-x-3">
-              {[TEAM[0], TEAM[1]].map((m) => (
-                <span
-                  key={m.name}
-                  className="relative flex h-11 w-11 items-center justify-center overflow-hidden rounded-full text-sm font-bold text-white ring-2 ring-surface"
-                  style={{ backgroundImage: `linear-gradient(135deg, ${m.from}, ${m.to})` }}
-                >
-                  {initials(m.name)}
-                  {/* eslint-disable-next-line @next/next/no-img-element */}
-                  <img
-                    src={m.img}
-                    alt={m.name}
-                    loading="lazy"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                    }}
-                    className="absolute inset-0 h-full w-full object-cover"
-                  />
-                </span>
-              ))}
-            </div>
-            <div className="text-left">
-              <div className="text-sm font-semibold text-foreground">Sofia Chen &amp; Marcus Lee</div>
-              <div className="text-xs text-muted">Co-founders, Flowly</div>
-            </div>
-          </figcaption>
-        </motion.figure>
-      </Container>
+      {/* Founder's note — scroll scale reveal */}
+      <FounderNote />
 
       {/* Milestones — horizontal scroll-pinned timeline */}
       <Milestones />
 
       {/* Values */}
-      <Container className="py-16 sm:py-24">
-        <SectionHeading eyebrow="Our values" title="What we care about" />
-        <ValuesShowcase />
-      </Container>
+      <ValuesSection />
 
-      {/* Team */}
-      <Container className="pb-24 sm:pb-32">
-        <SectionHeading
-          eyebrow="The team"
-          title="The people behind Flowly"
-          subtitle="A senior team from Linear, Notion, Stripe, and Figma — obsessed with the craft of great software."
-        />
-        <div className="mt-14 grid grid-cols-2 items-start gap-4 sm:grid-cols-3 sm:gap-6">
-          {TEAM.map((m, i) => (
-            <TeamTilt key={m.name} m={m} i={i} />
-          ))}
+      {/* Team — pinned gallery on desktop, tilt grid on mobile */}
+      <div className="pb-24 sm:pb-32">
+        <div className="md:hidden">
+          <Container>
+            <SectionHeading
+              eyebrow="The team"
+              title="The people behind Flowly"
+              subtitle="A senior team from Linear, Notion, Stripe, and Figma — obsessed with the craft of great software."
+            />
+            <div className="mt-14 grid grid-cols-2 items-start gap-4 sm:grid-cols-3 sm:gap-6">
+              {TEAM.map((m, i) => (
+                <TeamTilt key={m.name} m={m} i={i} />
+              ))}
+            </div>
+          </Container>
         </div>
-      </Container>
+        <TeamPinned />
+      </div>
 
       {/* Careers */}
       <section className="relative overflow-hidden border-t border-border bg-surface-2/40 py-20 sm:py-28">
