@@ -221,7 +221,7 @@ function FeaturesPinned() {
           className="flex h-full max-h-[620px] items-stretch gap-6 px-6 lg:px-8"
         >
           <IntroPanel pinned />
-          <div className="relative flex h-full items-stretch">
+          <div className="relative flex h-full items-stretch gap-6">
             <div className="pointer-events-none absolute inset-x-0 top-1/2 h-px -translate-y-1/2 bg-border" />
             <motion.div
               style={{ width: fillWidth }}
