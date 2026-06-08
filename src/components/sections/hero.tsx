@@ -4,6 +4,7 @@ import { useRef } from "react";
 import {
   motion,
   useScroll,
+  useSpring,
   useTransform,
   useReducedMotion,
 } from "framer-motion";
@@ -15,6 +16,7 @@ import { Counter } from "@/components/ui/counter";
 import { CanvasGradient } from "@/components/ui/canvas-gradient";
 import { KineticHeading } from "@/components/ui/kinetic-heading";
 import { DashboardMock } from "@/components/ui/dashboard-mock";
+import { useIsMobile } from "@/hooks/use-media";
 import { EASE } from "@/lib/motion";
 
 const STATS = [
@@ -27,15 +29,29 @@ const STATS = [
 export function Hero() {
   const ref = useRef<HTMLDivElement>(null);
   const reduce = useReducedMotion();
+  const isMobile = useIsMobile();
   const { scrollYProgress } = useScroll({
     target: ref,
     offset: ["start start", "end start"],
   });
 
-  const rotateX = useTransform(scrollYProgress, [0, 0.5], [24, 0]);
-  const scale = useTransform(scrollYProgress, [0, 0.5], [0.9, 1]);
-  const y = useTransform(scrollYProgress, [0, 1], [0, -120]);
-  const textY = useTransform(scrollYProgress, [0, 1], [0, 80]);
+  // Spring-smooth the raw scroll value so wheel/trackpad steps don't make the
+  // mockup tilt stutter — this is what made the hero feel "bugged".
+  const progress = useSpring(scrollYProgress, {
+    stiffness: 90,
+    damping: 30,
+    restDelta: 0.0005,
+  });
+
+  // 3D tilt only on devices with a fine pointer; on touch it just janks and
+  // can't be appreciated, so phones get a lighter rise/scale instead.
+  const rotateX = useTransform(progress, [0, 0.55], [isMobile ? 0 : 18, 0]);
+  const scale = useTransform(progress, [0, 0.55], [isMobile ? 0.97 : 0.9, 1]);
+  const y = useTransform(progress, [0, 1], [0, isMobile ? -56 : -120]);
+  // Headline drifts up *with* the scroll (slower than the page) and gently
+  // fades — reads as intentional parallax instead of lagging behind.
+  const textY = useTransform(progress, [0, 1], [0, isMobile ? -40 : -70]);
+  const textOpacity = useTransform(progress, [0, 0.85], [1, 0]);
 
   return (
     <section
@@ -51,7 +67,9 @@ export function Hero() {
       <div className="grain pointer-events-none absolute inset-0 -z-10 opacity-[0.04] mix-blend-overlay" />
 
       <Container>
-        <motion.div style={reduce ? undefined : { y: textY }}>
+        <motion.div
+          style={reduce ? undefined : { y: textY, opacity: textOpacity }}
+        >
           {/* Status pill */}
           <motion.div
             initial={{ opacity: 0, y: 12 }}

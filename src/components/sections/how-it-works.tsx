@@ -14,7 +14,7 @@ import { Container } from "@/components/ui/container";
 import { SectionHeading } from "@/components/ui/section-heading";
 import { IconTile } from "@/components/ui/icon-tile";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
-import { revealIn } from "@/lib/motion";
+import { revealFromLeft, revealFromRight } from "@/lib/motion";
 
 type Step = {
   icon: LucideIcon;
@@ -130,7 +130,11 @@ function MobileSteps() {
   return (
     <div className="mt-16 flex flex-col gap-6 md:hidden">
       {STEPS.map((step, i) => (
-        <ScrollReveal key={step.number} variants={revealIn} custom={i}>
+        <ScrollReveal
+          key={step.number}
+          variants={i % 2 === 0 ? revealFromLeft : revealFromRight}
+          custom={0}
+        >
           <div className="gradient-border overflow-hidden rounded-[2rem]">
             <div className="bg-surface p-8">
               <StepBody step={step} />

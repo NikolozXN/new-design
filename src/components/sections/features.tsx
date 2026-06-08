@@ -24,7 +24,7 @@ import { Scramble } from "@/components/ui/scramble";
 import { IconTile } from "@/components/ui/icon-tile";
 import { FeatureArt } from "@/components/ui/feature-art";
 import { ScrollReveal } from "@/components/ui/scroll-reveal";
-import { revealFromLeft, revealIn } from "@/lib/motion";
+import { revealFromLeft, revealFromRight, revealIn } from "@/lib/motion";
 import { cn } from "@/lib/utils";
 
 const useIsoLayoutEffect = typeof window !== "undefined" ? useLayoutEffect : useEffect;
@@ -160,7 +160,12 @@ function FeaturesGrid() {
         </ScrollReveal>
         <div className="mt-12 grid gap-5 sm:grid-cols-2 lg:grid-cols-3">
           {FEATURES.map((f, i) => (
-            <ScrollReveal key={f.num} variants={revealIn} custom={i} className="min-h-[28rem]">
+            <ScrollReveal
+              key={f.num}
+              variants={i % 2 === 0 ? revealFromLeft : revealFromRight}
+              custom={i % 3}
+              className="min-h-[28rem]"
+            >
               <Panel f={f} />
             </ScrollReveal>
           ))}

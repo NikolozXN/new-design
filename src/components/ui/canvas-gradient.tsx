@@ -33,7 +33,7 @@ export function CanvasGradient({ className }: { className?: string }) {
 
     const styles = getComputedStyle(document.documentElement);
     // Pull brand hues from CSS so the canvas re-themes with --primary/--accent.
-    const palette = [
+    const fullPalette = [
       { hue: 265, sat: 85, light: 60, alpha: 0.55 }, // violet
       { hue: 286, sat: 90, light: 65, alpha: 0.45 }, // fuchsia-violet
       { hue: 78, sat: 95, light: 62, alpha: 0.32 }, // lime accent
@@ -41,9 +41,17 @@ export function CanvasGradient({ className }: { className?: string }) {
     ];
     void styles;
 
+    // Touch / small-viewport devices: fewer blobs, capped DPR and frame rate so
+    // the continuous aurora loop stays smooth (this is the hero's biggest cost).
+    const lite = window.matchMedia(
+      "(max-width: 1024px), (pointer: coarse)"
+    ).matches;
+    const palette = lite ? fullPalette.slice(0, 3) : fullPalette;
+    const frameInterval = lite ? 1000 / 30 : 0; // 30fps on mobile, uncapped on desktop
+
     let w = 0;
     let h = 0;
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const dpr = Math.min(window.devicePixelRatio || 1, lite ? 1.25 : 2);
     const blobs: Blob[] = [];
     const mouse = { x: 0.5, y: 0.4, tx: 0.5, ty: 0.4 };
 
@@ -102,10 +110,14 @@ export function CanvasGradient({ className }: { className?: string }) {
     draw();
 
     let raf = 0;
-    let running = true;
-    const loop = () => {
+    let running = false;
+    let last = 0;
+    const loop = (now: number) => {
       if (!running) return;
-      draw();
+      if (!frameInterval || now - last >= frameInterval) {
+        draw();
+        last = now;
+      }
       raf = requestAnimationFrame(loop);
     };
 
@@ -122,9 +134,14 @@ export function CanvasGradient({ className }: { className?: string }) {
 
     const io = new IntersectionObserver(
       ([entry]) => {
-        running = entry.isIntersecting && !reduce;
-        if (running) loop();
-        else cancelAnimationFrame(raf);
+        const next = entry.isIntersecting && !reduce;
+        if (next && !running) {
+          running = true;
+          raf = requestAnimationFrame(loop);
+        } else if (!next) {
+          running = false;
+          cancelAnimationFrame(raf);
+        }
       },
       { threshold: 0 }
     );
