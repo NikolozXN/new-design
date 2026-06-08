@@ -311,47 +311,67 @@ function ValuesShowcaseScroll() {
           <div className="grid items-start gap-10 lg:grid-cols-[minmax(0,20rem)_1fr]">
             {/* Desktop sidebar */}
             <div className="relative">
-              <div className="absolute bottom-2 left-[1.35rem] top-2 w-px bg-border" />
+              {/* Progress rail lives in its own left gutter so it never cuts
+                  through the cards. Track + scroll-driven fill + per-card nodes. */}
+              <div className="absolute inset-y-5 left-[0.4375rem] w-0.5 rounded-full bg-border" />
               <motion.div
                 style={{ scaleY: progress }}
-                className="absolute bottom-2 left-[1.35rem] top-2 w-0.5 origin-top rounded-full bg-gradient-to-b from-primary to-accent shadow-[0_0_10px_var(--primary)]"
+                className="absolute inset-y-5 left-[0.4375rem] w-0.5 origin-top rounded-full bg-gradient-to-b from-primary to-accent shadow-[0_0_10px_var(--primary)]"
               />
-              <div className="relative flex flex-col gap-1.5 pl-1">
+              <div className="relative flex flex-col gap-1.5">
                 {VALUES.map((v, i) => {
                   const isActive = i === active;
+                  const isPassed = i <= active;
                   const Icon = v.icon;
                   return (
                     <div
                       key={v.title}
-                      className={cn(
-                        "relative flex items-center gap-3.5 rounded-xl px-3 py-3.5 transition-opacity duration-300",
-                        isActive ? "opacity-100" : "opacity-45"
-                      )}
+                      className="relative grid grid-cols-[1rem_1fr] items-center gap-3"
                     >
-                      {isActive && (
+                      {/* Rail node — fills once its card has been reached */}
+                      <span className="relative z-10 flex justify-center">
                         <motion.span
-                          layoutId="values-scroll-active"
-                          className="absolute inset-0 rounded-xl border border-primary/20 bg-surface shadow-md"
-                          transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                          animate={{ scale: isActive ? 1.35 : 1 }}
+                          transition={{ type: "spring", stiffness: 380, damping: 30 }}
+                          className={cn(
+                            "h-2.5 w-2.5 rounded-full ring-4 ring-background transition-colors duration-300",
+                            isPassed ? "bg-primary" : "bg-border",
+                            isActive && "shadow-[0_0_10px_var(--primary)]"
+                          )}
                         />
-                      )}
-                      <span
+                      </span>
+
+                      <div
                         className={cn(
-                          "relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-lg text-white transition-transform duration-300",
-                          isActive && "scale-105"
+                          "relative flex items-center gap-3.5 rounded-xl px-3 py-3.5 transition-opacity duration-300",
+                          isActive ? "opacity-100" : "opacity-45"
                         )}
-                        style={{
-                          backgroundImage: `linear-gradient(135deg, ${v.tint}, color-mix(in srgb, ${v.tint} 55%, #000))`,
-                        }}
                       >
-                        <Icon className="h-4 w-4" />
-                      </span>
-                      <span className="relative z-10 min-w-0 flex-1 font-display text-sm font-semibold tracking-tight text-foreground">
-                        {v.title}
-                      </span>
-                      <span className="relative z-10 font-mono text-[11px] font-semibold text-muted/70">
-                        {String(i + 1).padStart(2, "0")}
-                      </span>
+                        {isActive && (
+                          <motion.span
+                            layoutId="values-scroll-active"
+                            className="absolute inset-0 rounded-xl border border-primary/20 bg-surface shadow-md"
+                            transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                          />
+                        )}
+                        <span
+                          className={cn(
+                            "relative z-10 grid h-10 w-10 shrink-0 place-items-center rounded-lg text-white transition-transform duration-300",
+                            isActive && "scale-105"
+                          )}
+                          style={{
+                            backgroundImage: `linear-gradient(135deg, ${v.tint}, color-mix(in srgb, ${v.tint} 55%, #000))`,
+                          }}
+                        >
+                          <Icon className="h-4 w-4" />
+                        </span>
+                        <span className="relative z-10 min-w-0 flex-1 font-display text-sm font-semibold tracking-tight text-foreground">
+                          {v.title}
+                        </span>
+                        <span className="relative z-10 font-mono text-[11px] font-semibold text-muted/70">
+                          {String(i + 1).padStart(2, "0")}
+                        </span>
+                      </div>
                     </div>
                   );
                 })}
